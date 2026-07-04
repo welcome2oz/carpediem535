@@ -90,8 +90,8 @@ def post_rates_bulk(body: BulkRateUpdate) -> dict:
 class RefreshOneRequest(BaseModel):
     origin: str
     dest: str
-    origin_port: str
-    dest_port: str
+    origin_query: str
+    dest_query: str
 
 
 @app.post("/api/rates/refresh")
@@ -107,7 +107,7 @@ def refresh_one(body: RefreshOneRequest) -> dict:
 
     try:
         with CogoportScraper(headless=True) as scraper:
-            result = scraper.search_rate(body.origin_port, body.dest_port)
+            result = scraper.search_rate(body.origin_query, body.dest_query)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"스크래핑 실행 중 오류: {e}") from e
 

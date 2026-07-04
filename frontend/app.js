@@ -26,8 +26,10 @@ function cargoById(id) {
   return state.cargoProfiles.find((c) => c.id === id);
 }
 
-function portCode(portField) {
-  return portField.split(" ")[0].trim();
+function searchQueryFor(country) {
+  const match = country.port.match(/\(([^)]+)\)/);
+  const city = match ? match[1] : country.port;
+  return `${city}, ${country.name}`;
 }
 
 const formatUSD = (num) =>
@@ -303,7 +305,7 @@ async function refreshOneRoute() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         origin: expCode, dest: impCode,
-        origin_port: portCode(origin.port), dest_port: portCode(dest.port),
+        origin_query: searchQueryFor(origin), dest_query: searchQueryFor(dest),
       }),
     });
     state.rates[routeKey(expCode, impCode)] = result;
@@ -382,7 +384,7 @@ function renderRatesTable(filter = "") {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             origin: oCode, dest: dCode,
-            origin_port: portCode(origin.port), dest_port: portCode(dest.port),
+            origin_query: searchQueryFor(origin), dest_query: searchQueryFor(dest),
           }),
         });
         state.rates[key] = result;

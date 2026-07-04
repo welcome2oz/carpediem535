@@ -1,20 +1,39 @@
 {
-  "_readme": "Cogoport 사이트 구조가 바뀌면 코드 대신 이 파일의 셀렉터만 수정하면 됩니다. 실제 로그인 후 개발자 도구로 다시 확인/보정이 필요합니다.",
-  "base_url": "https://www.cogoport.com/",
-  "login": {
-    "trigger_button": "text=Login",
-    "email_input": "input[type='email']",
-    "password_input": "input[type='password']",
-    "submit_button": "button[type='submit']"
-  },
+  "_readme": "Cogoport은 로그인 없이 운임 검색이 가능합니다. 각 필드는 후보 셀렉터를 배열로 나열하며, 스크래퍼는 순서대로 시도해 처음 매치되는 것을 사용합니다. 실제 사이트에서 맞지 않으면 `python -m scraper.cogoport_scraper --discover` 로 페이지의 input/button 목록을 뽑아 여기 값을 교체하세요.",
+  "base_url": "https://www.cogoport.com/freight-rate-search",
   "search": {
-    "origin_input": "input[placeholder='Origin']",
-    "destination_input": "input[placeholder='Destination']",
-    "autocomplete_option": "li[role='option']",
-    "search_button": "button:has-text('Search')"
+    "origin_input": [
+      "input[placeholder='Origin']",
+      "input[placeholder*='From' i]",
+      "input[placeholder*='Origin' i]",
+      "input[aria-label*='origin' i]"
+    ],
+    "destination_input": [
+      "input[placeholder='Destination']",
+      "input[placeholder*='To' i]",
+      "input[placeholder*='Destination' i]",
+      "input[aria-label*='destination' i]"
+    ],
+    "autocomplete_option": [
+      "li[role='option']",
+      "[role='option']",
+      "ul[role='listbox'] li"
+    ],
+    "search_button": [
+      "button:has-text('Search')",
+      "button:has-text('Get')",
+      "button:has-text('Rate')",
+      "button[type='submit']"
+    ]
   },
   "result": {
-    "price_element": ".price-amount, .freight-rate",
+    "price_element": [
+      ".price-amount",
+      ".freight-rate",
+      "[class*='price-amount']",
+      "[class*='freight-rate']",
+      "[class*='rate-amount']"
+    ],
     "result_timeout_ms": 15000
   }
 }
