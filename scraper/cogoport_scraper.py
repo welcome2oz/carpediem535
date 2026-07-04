@@ -173,6 +173,18 @@ def scrape_all(headless: bool, delay_seconds: float) -> dict[str, int]:
     return results
 
 
+def scrape_all_and_store(
+    headless: bool, delay_seconds: float, note: str = "Cogoport RPA batch update"
+) -> tuple[dict[str, int], int]:
+    """Scrape every route and persist the results, shared by the API job,
+    the daily scheduler, and the `--all --write` CLI path."""
+    results = scrape_all(headless=headless, delay_seconds=delay_seconds)
+    from app import storage
+
+    count = storage.set_many(results, source="scraped", note=note)
+    return results, count
+
+
 def discover(headless: bool) -> None:
     """Dump every input/button on the search page so selectors.json can be calibrated.
 
@@ -230,13 +242,13 @@ def main() -> None:
         return
 
     if args.all:
-        results = scrape_all(headless=args.headless, delay_seconds=args.delay)
-        print(json.dumps(results, indent=2))
-        if args.write and results:
-            from app import storage  # local import so single-route mode has no FastAPI dependency
-
-            count = storage.set_many(results, source="scraped", note="Cogoport RPA batch update")
+        if args.write:
+            results, count = scrape_all_and_store(headless=args.headless, delay_seconds=args.delay)
+            print(json.dumps(results, indent=2))
             print(f"[write] {count}개 구간 갱신 완료")
+        else:
+            results = scrape_all(headless=args.headless, delay_seconds=args.delay)
+            print(json.dumps(results, indent=2))
         return
 
     if not (args.origin and args.dest):

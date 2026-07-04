@@ -14,10 +14,12 @@ from typing import Literal
 
 DATA_DIR = Path(__file__).parent / "data"
 RATES_FILE = DATA_DIR / "freight_rates.json"
+SCHEDULER_STATUS_FILE = DATA_DIR / "scheduler_status.json"
 
 Source = Literal["seed", "manual", "scraped"]
 
 _lock = threading.Lock()
+_scheduler_lock = threading.Lock()
 
 
 def _now() -> str:
@@ -82,6 +84,23 @@ def set_many(entries: dict[str, float], source: Source, note: str = "") -> int:
             count += 1
         _write_raw(data)
         return count
+
+
+def get_scheduler_status() -> dict:
+    with _scheduler_lock:
+        if not SCHEDULER_STATUS_FILE.exists():
+            return {}
+        with SCHEDULER_STATUS_FILE.open("r", encoding="utf-8") as f:
+            return json.load(f)
+
+
+def set_scheduler_status(status: dict) -> None:
+    with _scheduler_lock:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = SCHEDULER_STATUS_FILE.with_suffix(".json.tmp")
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(status, f, indent=2, ensure_ascii=False)
+        tmp.replace(SCHEDULER_STATUS_FILE)
 
 
 def seed_if_empty(country_codes: list[str]) -> None:

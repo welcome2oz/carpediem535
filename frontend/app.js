@@ -108,6 +108,7 @@ function switchView(view) {
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.id === `view-${view}`));
   $("viewTitle").textContent = VIEW_TITLES[view];
+  if (view === "rates") renderScheduleBanner();
 }
 
 // ---------------------------------------------------------------------------
@@ -400,6 +401,36 @@ function renderRatesTable(filter = "") {
   });
 }
 
+async function renderScheduleBanner() {
+  const el = $("scheduleBanner");
+  try {
+    const s = await fetchJSON("/api/scheduler/status");
+    const parts = [];
+
+    if (s.enabled === false) {
+      parts.push("자동 갱신 비활성화됨 (서버 환경변수 DAILY_REFRESH_ENABLED=false)");
+    } else if (s.hour !== undefined) {
+      const hhmm = `${String(s.hour).padStart(2, "0")}:${String(s.minute).padStart(2, "0")}`;
+      parts.push(`<strong>매일 ${hhmm} (${s.timezone || "UTC"})</strong> Cogoport 자동 갱신`);
+      if (s.nextRunAt) parts.push(`다음 실행: ${new Date(s.nextRunAt).toLocaleString("ko-KR")}`);
+    }
+
+    if (s.status === "running") {
+      parts.push(`<span class="badge badge-warning">지금 실행 중</span>`);
+    } else if (s.status === "done") {
+      parts.push(`<span class="badge badge-good">최근 성공</span> ${s.updated}/${s.totalRoutes}개 갱신 · ${new Date(s.finishedAt).toLocaleString("ko-KR")}`);
+    } else if (s.status === "error") {
+      parts.push(`<span class="badge badge-critical">최근 실패</span> ${s.error} · ${new Date(s.finishedAt).toLocaleString("ko-KR")}`);
+    } else if (s.enabled !== false) {
+      parts.push("아직 자동 실행 이력이 없습니다");
+    }
+
+    el.innerHTML = parts.join(" · ");
+  } catch (e) {
+    el.innerHTML = "";
+  }
+}
+
 async function refreshAllRoutes() {
   const btn = $("refreshAllBtn");
   const statusEl = $("refreshAllStatus");
@@ -499,6 +530,7 @@ async function init() {
   buildMatrix();
   updateFreightInput();
   renderRatesTable();
+  renderScheduleBanner();
 
   $("matrixCargoSelect").addEventListener("change", buildMatrix);
   $("cargoSelect").addEventListener("change", calculateCost);
@@ -509,6 +541,10 @@ async function init() {
   $("refreshAllBtn").addEventListener("click", refreshAllRoutes);
   $("bulkSyncBtn").addEventListener("click", bulkSync);
   $("rateSearch").addEventListener("input", (e) => renderRatesTable(e.target.value));
+
+  setInterval(() => {
+    if ($("view-rates").classList.contains("is-active")) renderScheduleBanner();
+  }, 60000);
 }
 
 init().catch((e) => showToast(`초기화 실패: ${e.message}`));

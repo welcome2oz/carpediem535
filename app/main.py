@@ -18,7 +18,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app import storage
+from app import scheduler, storage
 
 BASE_DIR = Path(__file__).parent
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
@@ -36,8 +36,21 @@ def _country_codes() -> list[str]:
 
 
 @app.on_event("startup")
-def _seed_rates() -> None:
+def _startup() -> None:
     storage.seed_if_empty(_country_codes())
+    scheduler.start_scheduler()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    scheduler.stop_scheduler()
+
+
+@app.get("/api/scheduler/status")
+def get_scheduler_status() -> dict:
+    status = storage.get_scheduler_status()
+    status["nextRunAt"] = scheduler.get_next_run_time()
+    return status
 
 
 # ---------------------------------------------------------------------------
@@ -129,10 +142,11 @@ def _run_batch_refresh(job_id: str, delay_seconds: float) -> None:
     with _jobs_lock:
         _jobs[job_id]["status"] = "running"
     try:
-        from scraper.cogoport_scraper import scrape_all
+        from scraper.cogoport_scraper import scrape_all_and_store
 
-        results = scrape_all(headless=True, delay_seconds=delay_seconds)
-        count = storage.set_many(results, source="scraped", note="Cogoport RPA 배치 업데이트")
+        _, count = scrape_all_and_store(
+            headless=True, delay_seconds=delay_seconds, note="Cogoport RPA 배치 업데이트 (수동 실행)"
+        )
         with _jobs_lock:
             _jobs[job_id].update(status="done", updated=count, finishedAt=_now_iso())
     except Exception as e:  # noqa: BLE001

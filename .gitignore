@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 app/data/freight_rates.json
 app/data/freight_rates.json.tmp
+app/data/scheduler_status.json
+app/data/scheduler_status.json.tmp
 .env

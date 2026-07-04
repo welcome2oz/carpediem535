@@ -57,8 +57,26 @@ uvicorn app.main:app --reload --port 8000
   - 경로 시뮬레이터의 "Cogoport에서 재조회" 버튼 → 현재 선택된 구간 1개만 즉시 조회
   - 해상운임 관리 탭의 "전체 자동 재조회" → 90개 구간을 순차 조회 (백그라운드 작업,
     수 분 소요, 진행 상황 폴링 표시)
+  - **매일 자동 갱신**: 서버가 켜져 있는 동안 `APScheduler`가 지정된 시각에 90개
+    구간 전체를 자동으로 재조회해 저장합니다. "해상운임 관리" 탭 상단 배너에서
+    다음 실행 시각과 마지막 실행 결과(성공/실패, 갱신 개수)를 확인할 수 있습니다.
   - 검색어는 국가 데이터의 항구명에서 도시명을 추출해 `"Busan, South Korea"` 형태로
     자동 완성 검색창에 입력합니다 (`scraper/cogoport_scraper.py`의 `search_query_for`)
+
+### 매일 자동 갱신 설정 (환경변수)
+
+| 변수 | 기본값 | 설명 |
+|---|---|---|
+| `DAILY_REFRESH_ENABLED` | `true` | `false`로 설정하면 자동 갱신 비활성화 |
+| `DAILY_REFRESH_HOUR` | `7` | 실행 시각(시), 0-23 |
+| `DAILY_REFRESH_MINUTE` | `0` | 실행 시각(분) |
+| `DAILY_REFRESH_TZ` | `UTC` | 예: `Asia/Seoul` |
+| `COGOPORT_REQUEST_DELAY_SECONDS` | `3.0` | 구간 사이 요청 지연(초) |
+
+서버 프로세스가 계속 떠 있어야 스케줄이 동작합니다 (예: `uvicorn ... &` 또는
+systemd/Docker로 상시 실행). 재시작하면 그 시점부터 다음 예정 시각을 다시
+계산합니다 — 마지막 실행 결과는 `app/data/scheduler_status.json`에 남아있어
+재시작해도 이력이 유지됩니다.
 
 ### 스크래퍼 셀렉터 보정이 필요한 이유
 
@@ -142,3 +160,4 @@ uvicorn app.main:app --reload --port 8000
 | POST | `/api/rates/refresh` | 단일 구간 Cogoport 즉시 조회 (동기) |
 | POST | `/api/rates/refresh-all` | 전체 구간 Cogoport 조회 (비동기 job 시작) |
 | GET | `/api/jobs/{job_id}` | 전체 조회 작업 진행 상태 |
+| GET | `/api/scheduler/status` | 매일 자동 갱신 스케줄/마지막 실행 결과 |
