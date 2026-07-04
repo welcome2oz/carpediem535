@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Cost Simulator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Ctext x='16' y='22' font-family='system-ui' font-size='14' font-weight='700' fill='white' text-anchor='middle'%3ETC%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">TC</span>
+        <div class="brand-text">
+          <strong>Trade Cost Simulator</strong>
+          <small>EXW → DAP 물류 부대비용</small>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <button class="nav-item is-active" data-view="matrix">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" stroke-width="1.6"/></svg>
+          비용 매트릭스
+        </button>
+        <button class="nav-item" data-view="simulator">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-3 3 2 4-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          경로 시뮬레이터
+        </button>
+        <button class="nav-item" data-view="rates">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          해상운임 관리
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <span class="dot"></span> <span id="themeLabel">Dark mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <h1 id="viewTitle">Total Logistics Cost Matrix</h1>
+        <div class="topbar-meta">
+          <span class="muted">관세/수입세는 포함하지 않은 부대비용 기준입니다</span>
+        </div>
+      </header>
+
+      <!-- ============ VIEW: MATRIX ============ -->
+      <section class="view is-active" id="view-matrix">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Total Logistics Cost Matrix</h2>
+              <p class="muted">선택한 화물 프로필 기준, 구간별 $/MT 부대비용 (출발지+해상운임+도착지)</p>
+            </div>
+            <label class="field field-inline">
+              <span>화물 프로필</span>
+              <select id="matrixCargoSelect"></select>
+            </label>
+          </div>
+          <div class="legend-row">
+            <span class="muted">저비용</span>
+            <div class="legend-ramp" id="legendRamp"></div>
+            <span class="muted">고비용</span>
+          </div>
+          <div class="table-scroll">
+            <table class="matrix-table" id="matrixTable">
+              <thead><tr id="matrixHeadRow"></tr></thead>
+              <tbody id="matrixBody"></tbody>
+            </table>
+          </div>
+          <p class="hint">셀을 클릭하면 해당 구간이 경로 시뮬레이터로 이동합니다.</p>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: SIMULATOR ============ -->
+      <section class="view" id="view-simulator">
+        <div class="card">
+          <h2>Detailed Route Simulator</h2>
+          <div class="sim-inputs">
+            <label class="field">
+              <span>EXW Price (USD / MT)</span>
+              <input type="number" id="exwInput" value="2000" min="0">
+            </label>
+            <label class="field">
+              <span>화물 프로필 (per 40ft)</span>
+              <select id="cargoSelect"></select>
+            </label>
+            <label class="field">
+              <span>Export Origin</span>
+              <select id="exportSelect"></select>
+            </label>
+            <label class="field">
+              <span>Import Destination</span>
+              <select id="importSelect"></select>
+            </label>
+          </div>
+
+          <div class="ocean-panel">
+            <div class="ocean-panel-main">
+              <span class="ocean-label">Ocean Freight (USD / 40ft)</span>
+              <input type="number" id="freightInput" min="0">
+              <span class="freight-meta" id="freightMeta"></span>
+            </div>
+            <div class="ocean-panel-actions">
+              <button class="btn btn-ghost" id="refreshOneBtn">Cogoport에서 재조회</button>
+              <button class="btn btn-primary" id="calcBtn">Calculate DAP</button>
+            </div>
+          </div>
+
+          <div class="waterfall hidden" id="resultsArea">
+            <div class="wf-card">
+              <div class="wf-step">Step 1 · EXW</div>
+              <div class="wf-value" id="resExw">$0.00</div>
+              <div class="wf-sub">Factory Price</div>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-card">
+              <div class="wf-step">Step 2 · FOB</div>
+              <div class="wf-value" id="resFob">$0.00</div>
+              <div class="wf-add" id="resFobAdd">+$0.00</div>
+              <ul class="wf-detail" id="detailExport"></ul>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-card">
+              <div class="wf-step">Step 3 · CIF</div>
+              <div class="wf-value" id="resCif">$0.00</div>
+              <div class="wf-add" id="resCifAdd">+$0.00</div>
+              <ul class="wf-detail" id="detailOcean"></ul>
+            </div>
+            <div class="wf-arrow">→</div>
+            <div class="wf-card wf-card-final">
+              <div class="wf-step">Step 4 · DAP (Final)</div>
+              <div class="wf-value wf-value-final" id="resDap">$0.00</div>
+              <div class="wf-add wf-add-final" id="resDapAdd">+$0.00</div>
+              <ul class="wf-detail wf-detail-final" id="detailImport"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: RATES ============ -->
+      <section class="view" id="view-rates">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>해상운임 관리 (Ocean Freight)</h2>
+              <p class="muted">국제 정세에 따라 가장 크게 변동하는 구간입니다. 수동 입력 또는 Cogoport 자동 조회로 갱신하세요.</p>
+            </div>
+            <div class="rates-actions">
+              <input type="search" id="rateSearch" placeholder="구간 검색 (예: KR-US)">
+              <button class="btn btn-primary" id="refreshAllBtn">전체 자동 재조회</button>
+            </div>
+          </div>
+          <div id="refreshAllStatus" class="job-status hidden"></div>
+          <div class="table-scroll">
+            <table class="rates-table" id="ratesTable">
+              <thead>
+                <tr>
+                  <th>구간</th><th>운임 (USD/40ft)</th><th>출처</th><th>최근 갱신</th><th>상태</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="ratesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <details>
+            <summary><h2 class="inline-h2">수동 일괄 업데이트</h2></summary>
+            <p class="muted">Cogoport 등에서 직접 확인한 값을 JSON으로 붙여넣어 한번에 반영합니다.</p>
+            <textarea id="bulkJsonInput" rows="4" placeholder='{"KR-US": 6000, "CN-US": 5500}'></textarea>
+            <button class="btn btn-primary" id="bulkSyncBtn">일괄 반영</button>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "note": "샘플 기본값입니다. 실제 내륙운송비/항만부대비용/통관비 데이터로 교체해서 사용하세요. (관세/수입세는 포함하지 않습니다)",
+  "countries": [
+    { "code": "KR", "name": "South Korea",   "port": "KRPUS (Busan)",          "inlandTrucking": 400,  "portHandling": 300, "customsClearance": 150, "heavyMultiplier": 1.2 },
+    { "code": "CN", "name": "China",         "port": "CNTXG (Xingang)",        "inlandTrucking": 600,  "portHandling": 250, "customsClearance": 180, "heavyMultiplier": 1.3 },
+    { "code": "IN", "name": "India",         "port": "INPAV (Mundra)",         "inlandTrucking": 800,  "portHandling": 400, "customsClearance": 250, "heavyMultiplier": 1.4 },
+    { "code": "TH", "name": "Thailand",      "port": "THLCH (Laem Chabang)",   "inlandTrucking": 350,  "portHandling": 200, "customsClearance": 150, "heavyMultiplier": 1.1 },
+    { "code": "ID", "name": "Indonesia",     "port": "IDTPP (Tanjung Priok)",  "inlandTrucking": 400,  "portHandling": 250, "customsClearance": 180, "heavyMultiplier": 1.2 },
+    { "code": "SA", "name": "Saudi Arabia",  "port": "SAJED (Jeddah)",         "inlandTrucking": 700,  "portHandling": 450, "customsClearance": 300, "heavyMultiplier": 1.3 },
+    { "code": "BR", "name": "Brazil",        "port": "BRMAO (Manaus)",         "inlandTrucking": 1200, "portHandling": 600, "customsClearance": 350, "heavyMultiplier": 1.5 },
+    { "code": "US", "name": "United States", "port": "USCKV (Clarksville)",    "inlandTrucking": 1500, "portHandling": 800, "customsClearance": 280, "heavyMultiplier": 1.6 },
+    { "code": "TR", "name": "Turkey",        "port": "TRIST (Istanbul)",       "inlandTrucking": 500,  "portHandling": 350, "customsClearance": 200, "heavyMultiplier": 1.2 },
+    { "code": "EG", "name": "Egypt",         "port": "EGCAI (Cairo/Alex)",     "inlandTrucking": 450,  "portHandling": 300, "customsClearance": 220, "heavyMultiplier": 1.2 }
+  ]
+}

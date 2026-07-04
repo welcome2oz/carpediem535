@@ -1,0 +1,20 @@
+{
+  "_readme": "Cogoport 사이트 구조가 바뀌면 코드 대신 이 파일의 셀렉터만 수정하면 됩니다. 실제 로그인 후 개발자 도구로 다시 확인/보정이 필요합니다.",
+  "base_url": "https://www.cogoport.com/",
+  "login": {
+    "trigger_button": "text=Login",
+    "email_input": "input[type='email']",
+    "password_input": "input[type='password']",
+    "submit_button": "button[type='submit']"
+  },
+  "search": {
+    "origin_input": "input[placeholder='Origin']",
+    "destination_input": "input[placeholder='Destination']",
+    "autocomplete_option": "li[role='option']",
+    "search_button": "button:has-text('Search')"
+  },
+  "result": {
+    "price_element": ".price-amount, .freight-rate",
+    "result_timeout_ms": 15000
+  }
+}

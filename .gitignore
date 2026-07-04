@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+app/data/freight_rates.json
+app/data/freight_rates.json.tmp
+.env

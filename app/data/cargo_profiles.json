@@ -1,0 +1,8 @@
+{
+  "profiles": [
+    { "id": "steelCoil",   "name": "Steel Coil / Heavy Plate", "weightMT": 26, "isHeavy": true  },
+    { "id": "steelPipe",   "name": "Steel Pipe / Beam",        "weightMT": 22, "isHeavy": false },
+    { "id": "resinPallet", "name": "Resin Palletized",         "weightMT": 21, "isHeavy": false },
+    { "id": "resinBulk",   "name": "Resin Bulk / Jumbo",        "weightMT": 25, "isHeavy": true  }
+  ]
+}
