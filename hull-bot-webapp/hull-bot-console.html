@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hull 봇 콘솔</title>
+<!--
+  Hull Suite 봇 콘솔 — 더블클릭으로 여는 HTML 한 파일 (서버·설치 없음, 크롬/엣지 전용).
+  봇 폴더를 한 번 선택하면 매매 기록·로그·상태 파일을 보고, config.json 편집과 STOP 파일 켜기/끄기를 할 수 있습니다.
+  브라우저는 보안상 프로그램을 실행할 수 없으므로 봇 시작·정지는 bat 파일로 합니다.
+  외부로 아무것도 보내지 않으며 .env는 읽지 않습니다.
+-->
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--fg:#1d2330;--mute:#6b7280;--line:#e3e6eb;--ok:#15803d;--bad:#b91c1c;--warn:#b45309;--acc:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b22;--fg:#e6e8ec;--mute:#9aa1ad;--line:#2a2f3a;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--acc:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 "Pretendard",system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--mute);font-size:12px;word-break:break-all}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.bot{border:1px solid var(--line);border-radius:10px;padding:12px}
+.bot.live{border-color:var(--bad)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mute);margin-right:6px}
+.dot.on{background:var(--ok)}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.warn{color:var(--warn)}.bad{color:var(--bad)}.ok{color:var(--ok)}
+code{font:12px ui-monospace,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:420px;overflow:auto;white-space:pre-wrap;word-break:break-all;font:12px/1.45 ui-monospace,Consolas,monospace;margin:8px 0 0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tablewrap{overflow:auto;max-height:480px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card)}
+textarea{width:100%;min-height:340px;font:12px/1.45 ui-monospace,Consolas,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px}
+select,input[type=search]{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;display:none;max-width:90vw}
+#app[hidden],#connect[hidden]{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Hull Suite 봇 콘솔</h1>
+  <div class="sub" id="dir">봇 폴더가 선택되지 않았습니다.</div>
+  <div class="sub warn" id="notice"></div>
+
+  <section class="card" id="connect">
+    <h2>봇 폴더 연결</h2>
+    <p class="sub">bot.py가 있는 폴더를 선택하세요. 한 번 선택하면 다음부터는 "다시 연결" 버튼만 누르면 됩니다. 파일은 이 PC 밖으로 나가지 않습니다.</p>
+    <div class="row"><button class="pri" id="pick">봇 폴더 선택</button><button id="reconnect" hidden>다시 연결</button></div>
+  </section>
+
+  <div id="app" hidden>
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">운영 현황</h2>
+        <div class="row">
+          <label title="봇 폴더에 STOP 파일을 만들어 신규 진입만 멈춤"><input type="checkbox" id="stopfile"> <b>신규 진입 멈춤 (STOP 파일)</b></label>
+          <button id="pick2">폴더 바꾸기</button>
+        </div>
+      </div>
+      <div class="grid" id="bots" style="margin-top:12px"></div>
+      <p class="sub">봇 시작·정지는 봇 폴더의 bat 파일로 합니다 (브라우저는 프로그램을 실행할 수 없음). 정지는 봇 창에서 Ctrl+C — 보유 포지션과 거래소 손절 주문은 남습니다.
+        오늘 신호는 <code>check_signal.bat</code>으로 확인하세요.</p>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="tabs" id="tabs">
+          <button data-tab="journal" class="on">매매 기록</button>
+          <button data-tab="log">봇 로그</button>
+          <button data-tab="state">상태 파일</button>
+          <button data-tab="config">설정</button>
+        </div>
+        <div class="row">모드 <select id="mode"><option>paper</option><option>demo</option><option>testnet</option><option>live</option></select>
+          <button id="refresh">새로고침</button></div>
+      </div>
+      <div id="view" style="margin-top:10px"></div>
+    </section>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+const MODES = {paper:["모의","run_paper.bat"], demo:["데모","run_demo.bat"], testnet:["테스트넷","run_testnet.bat"], live:["실계정","run_live.bat"]};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = t => { if (!t) return "없음"; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "방금" : m < 60 ? m + "분 전" : m < 2880 ? Math.round(m / 60) + "시간 전" : Math.round(m / 1440) + "일 전"; };
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 3000); }
+let dir = null, tab = "journal";
+try { tab = localStorage.getItem("tab") || tab; $("#mode").value = localStorage.getItem("mode") || "paper"; } catch {}
+
+// ---- 파일 읽기/쓰기 (File System Access API) ----
+function decode(buf) {
+  try { return new TextDecoder("utf-8", {fatal: true}).decode(buf); }
+  catch { return new TextDecoder("euc-kr").decode(buf); } // 한글 윈도우(cp949)로 저장된 경우
+}
+async function fileAt(path) {
+  const parts = path.split("/"); let d = dir;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p);
+  return (await d.getFileHandle(parts.at(-1))).getFile();
+}
+async function readText(path, lastBytes) {
+  try {
+    let f = await fileAt(path);
+    if (lastBytes) f = f.slice(Math.max(0, f.size - lastBytes));
+    return decode(await f.arrayBuffer());
+  } catch (e) {
+    if (e.name === "NotFoundError" || e.name === "TypeMismatchError") return null;
+    throw new Error(`${path}을(를) 읽지 못했습니다 (엑셀 등에서 열려 있으면 닫아 주세요): ${e.message}`);
+  }
+}
+async function mtime(path) { try { return (await fileAt(path)).lastModified; } catch { return null; } }
+async function writeText(name, text) {
+  const w = await (await dir.getFileHandle(name, {create: true})).createWritable(); // 닫을 때 한 번에 교체됨
+  await w.write(text); await w.close();
+}
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => c !== ""));
+}
+async function journal(m) { const t = await readText(`journal_${m}.csv`); return t ? parseCSV(t) : []; }
+
+// ---- 폴더 연결 (선택한 폴더는 브라우저에 기억) ----
+function kv(op, val) {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("hull-bot-console", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => {
+      const st = r.result.transaction("kv", op === "get" ? "readonly" : "readwrite").objectStore("kv");
+      const q = op === "get" ? st.get("dir") : st.put(val, "dir");
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    };
+  });
+}
+async function useDir(handle) {
+  dir = handle;
+  try { await kv("put", handle); } catch {}
+  $("#dir").textContent = "봇 폴더: " + handle.name;
+  $("#connect").hidden = true; $("#app").hidden = false;
+  let hasBot = true; try { await dir.getFileHandle("bot.py"); } catch { hasBot = false; }
+  $("#notice").textContent = hasBot ? "" : "이 폴더에 bot.py가 없습니다. 봇 폴더를 다시 선택하세요.";
+  $("#view").innerHTML = "";
+  await Promise.all([loadStatus(), loadView()]);
+}
+async function pick() {
+  try { await useDir(await showDirectoryPicker({id: "hull-bot", mode: "readwrite"})); }
+  catch (e) { if (e.name !== "AbortError") alert(e.message); }
+}
+$("#pick").onclick = pick; $("#pick2").onclick = pick;
+(async () => {
+  if (!window.showDirectoryPicker) {
+    $("#notice").textContent = "이 브라우저는 폴더 접근을 지원하지 않습니다. 크롬 또는 엣지로 이 파일을 여세요.";
+    $("#pick").disabled = true; return;
+  }
+  let saved; try { saved = await kv("get"); } catch {}
+  if (!saved) return;
+  if (await saved.queryPermission({mode: "readwrite"}) === "granted") return useDir(saved);
+  const b = $("#reconnect"); b.hidden = false; b.textContent = `다시 연결 (${saved.name})`;
+  b.onclick = async () => { if (await saved.requestPermission({mode: "readwrite"}) === "granted") useDir(saved); };
+})();
+
+// ---- 화면 ----
+async function loadStatus() {
+  if (!dir) return;
+  try { await dir.getFileHandle("STOP"); $("#stopfile").checked = true; } catch { $("#stopfile").checked = false; }
+  const cards = await Promise.all(Object.entries(MODES).map(async ([m, [name, bat]]) => {
+    const t = await mtime(`logs/bot_${m}.log`);
+    let j = []; try { j = await journal(m); } catch {}
+    const recent = t && Date.now() - t < 3 * 60000;
+    const last = j.length > 1 ? j.at(-1) : null;
+    return `<div class="bot ${m === "live" ? "live" : ""}">
+      <div class="row" style="justify-content:space-between"><b><span class="dot ${recent ? "on" : ""}"></span>${name} <span class="sub">${m}</span></b>
+        <span class="${recent ? "ok" : "sub"}">${recent ? "로그 갱신 중" : "최근 활동 없음"}</span></div>
+      <div class="sub">마지막 봇 로그: ${ago(t)} · 기록 ${Math.max(0, j.length - 1)}건</div>
+      ${last ? `<div class="sub" title="${esc(j[0].map((h, i) => h + ": " + (last[i] ?? "")).join("\n"))}">최근: ${esc(last.join(" · ")).slice(0, 120)}</div>` : ""}
+      <div class="sub" style="margin-top:6px">실행: <code>${bat}</code></div>
+    </div>`;
+  }));
+  $("#bots").innerHTML = cards.join("");
+}
+$("#stopfile").onchange = async e => {
+  try {
+    if (e.target.checked) await writeText("STOP", ""); else await dir.removeEntry("STOP");
+    toast(e.target.checked ? "신규 진입 멈춤 (STOP 파일 생성)" : "신규 진입 재개 (STOP 파일 삭제)");
+  } catch (err) { if (err.name !== "NotFoundError") alert(err.message); }
+  loadStatus();
+};
+
+function validateConfig(text) {
+  let cfg; try { cfg = JSON.parse(text); } catch (e) { throw new Error("JSON 형식 오류: " + e.message); }
+  if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) throw new Error("설정은 { } 객체여야 합니다.");
+  const lev = cfg.leverage ?? 2, sp = cfg.stop_pct ?? 0.05;
+  if (typeof lev !== "number" || !(lev > 0 && lev <= 10)) throw new Error("leverage는 0 초과 10 이하여야 합니다.");
+  if (typeof sp !== "number" || !(sp > 0 && sp < 1)) throw new Error("stop_pct는 0과 1 사이여야 합니다 (예: 0.05).");
+  if (!Object.hasOwn(MODES, cfg.mode ?? "paper")) throw new Error("mode는 paper, demo, testnet, live 중 하나여야 합니다.");
+  return JSON.stringify(cfg, null, 2) + "\n";
+}
+
+async function loadView() {
+  if (!dir) return;
+  const m = $("#mode").value, v = $("#view");
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  try {
+    if (tab === "journal") {
+      const rows = await journal(m);
+      if (rows.length < 2) { v.innerHTML = `<p class="sub">journal_${m}.csv 기록이 아직 없습니다.</p>`; return; }
+      const [head, ...body] = rows, kw = $("#filter")?.value || "";
+      const list = body.reverse().filter(r => !kw || r.join(" ").includes(kw));
+      v.innerHTML = `<div class="row" style="margin-bottom:8px"><input type="search" id="filter" placeholder="검색 (예: 청산, BTCUSDT)" value="${esc(kw)}"><span class="sub">최신순 ${list.length}/${body.length}건</span></div>
+        <div class="tablewrap"><table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+        <tbody>${list.slice(0, 1000).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+      const f = $("#filter"); f.oninput = () => { const pos = f.selectionStart; loadView().then(() => { const n = $("#filter"); n.focus(); n.setSelectionRange(pos, pos); }); };
+    } else if (tab === "log") {
+      const t = await readText(`logs/bot_${m}.log`, 300000);
+      const lines = t === null ? [] : t.split(/\r?\n/).slice(-300);
+      v.innerHTML = `<p class="sub">logs/bot_${m}.log 마지막 ${lines.length}줄</p><pre id="logpre">${esc(lines.join("\n")) || "(없음)"}</pre>`;
+      $("#logpre").scrollTop = 1e9;
+    } else if (tab === "state") {
+      const parts = [];
+      for await (const [name, h] of dir.entries()) {
+        if (h.kind !== "file" || !(/^state_.*\.json$/.test(name) || name === "paper_account.json")) continue;
+        const t = await readText(name);
+        let body; try { body = JSON.stringify(JSON.parse(t), null, 2); } catch { body = t; }
+        parts.push([name, `<h2 style="margin-top:12px">${esc(name)}</h2><pre>${esc(body)}</pre>`]);
+      }
+      v.innerHTML = parts.sort().map(p => p[1]).join("") || `<p class="sub">state_*.json 파일이 아직 없습니다.</p>`;
+    } else if (tab === "config") {
+      if ($("#cfg")) return; // 편집 중인 내용을 자동 새로고침으로 덮어쓰지 않음
+      const text = await readText("config.json") ?? "{}";
+      v.innerHTML = `<p class="sub">저장 시 형식·leverage(10 이하)·stop_pct·mode를 검사하고 이전 파일은 config.json.bak으로 보관합니다. 실행 중인 봇은 다시 시작해야 반영될 수 있습니다.</p>
+        <textarea id="cfg" spellcheck="false">${esc(text)}</textarea>
+        <div class="row" style="margin-top:8px"><button class="pri" id="saveCfg">저장</button><button id="reloadCfg">파일에서 다시 읽기</button></div>`;
+      $("#saveCfg").onclick = async () => {
+        try {
+          const out = validateConfig($("#cfg").value);
+          const old = await readText("config.json");
+          if (old !== null) await writeText("config.json.bak", old);
+          await writeText("config.json", out);
+          toast("저장했습니다"); v.innerHTML = ""; loadView();
+        } catch (e) { alert(e.message); }
+      };
+      $("#reloadCfg").onclick = () => { v.innerHTML = ""; loadView(); };
+    }
+  } catch (e) { v.innerHTML = `<p class="bad">${esc(e.message)}</p>`; }
+}
+$("#tabs").onclick = e => { if (!e.target.dataset.tab) return; tab = e.target.dataset.tab; try { localStorage.setItem("tab", tab); } catch {} $("#view").innerHTML = ""; loadView(); };
+$("#mode").onchange = () => { try { localStorage.setItem("mode", $("#mode").value); } catch {} if (tab !== "config") { $("#view").innerHTML = ""; loadView(); } };
+$("#refresh").onclick = () => { $("#view").innerHTML = ""; loadView(); loadStatus(); };
+setInterval(() => { loadStatus(); if (tab === "log" || tab === "state") loadView(); }, 15000);
+window.useDir = useDir; // 점검(test_console.mjs)용
+</script>
+</body>
+</html>
