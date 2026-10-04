@@ -53,17 +53,176 @@ textarea{width:100%;min-height:380px;font:12px/1.45 ui-monospace,Consolas,monosp
 select,input[type=search]{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;display:none;max-width:90vw}
 [hidden]{display:none!important}
+/* 설명서 */
+.guide h3{font-size:15px;margin:18px 0 6px}
+.guide p,.guide li{line-height:1.7}
+.guide ol,.guide ul{padding-left:20px;margin:6px 0}
+.guide details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;background:var(--card)}
+.guide summary{cursor:pointer;font-weight:700;font-size:15px}
+.guide details[open] summary{margin-bottom:6px}
+.flow{display:flex;gap:6px;align-items:stretch;flex-wrap:wrap;margin:10px 0}
+.flow div{flex:1 1 150px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);font-size:13px}
+.flow b{display:block;margin-bottom:2px}
+.flow i{align-self:center;font-style:normal;color:var(--mute)}
+@media (max-width:600px){.flow{flex-direction:column}.flow div{flex:none}.flow i{transform:rotate(90deg)}}
+.step{display:flex;gap:10px;margin:10px 0}
+.step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.step .n.live{background:var(--bad)}
+.callout{border-left:4px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);padding:8px 12px;border-radius:6px;margin:8px 0}
+.callout.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent)}
+.callout.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.guide table td,.guide table th{white-space:normal;vertical-align:top}
+.guide kbd{font:12px ui-monospace,Consolas,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--card)}
 </style>
 </head>
 <body>
 <main>
-  <h1>Hull Suite 봇 콘솔</h1>
+  <div class="row" style="justify-content:space-between"><h1>Hull Suite 봇 콘솔</h1><button id="guideBtn">📖 설명서</button></div>
   <div class="sub" id="dir">봇 폴더가 선택되지 않았습니다.</div>
   <div class="sub warn" id="notice"></div>
 
+  <section class="card guide" id="guide">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">📖 설명서</h2><button id="guideClose">닫기</button></div>
+
+    <h3>이 화면은 무엇인가요?</h3>
+    <p>자동매매는 <b>봇</b>(hullbot 폴더의 bot.py)이 합니다. 이 화면은 봇이 남긴 기록을 <b>읽어서 보여 주는 계기판</b>입니다.
+      이 화면은 바이비트에 연결하지 않고, 주문을 내지 않으며, API 키도 쓰지 않습니다.</p>
+    <div class="flow">
+      <div><b>① bat 파일 더블클릭</b>hullbot 폴더의 run_paper.bat 등</div><i>→</i>
+      <div><b>② 봇이 검은 창에서 실행</b>매일 한국 09:02 신호 판단, 1분마다 손절 감시</div><i>→</i>
+      <div><b>③ 봇이 파일에 기록</b>state·journal·log 파일</div><i>→</i>
+      <div><b>④ 이 화면이 파일을 읽어 표시</b>포지션·신호·손익·로그</div>
+    </div>
+    <div class="callout ok">API 키가 없어도 <b>모의(paper) 모드</b>와 <b>신호 확인</b>은 바로 해 볼 수 있습니다. 실제 돈은 쓰이지 않습니다.</div>
+
+    <details open>
+      <summary>처음 시작하기 — 키 없이 모의 운용 (약 10분)</summary>
+      <p class="sub">준비물: 윈도우 PC, 파이썬(Python), 압축을 푼 <code>hullbot</code> 폴더, 크롬 또는 엣지</p>
+
+      <div class="step"><div class="n">1</div><div><b>오늘 신호 확인</b><br>
+        hullbot 폴더에서 <code>check_signal.bat</code>을 더블클릭합니다. 검은 창에 BTC·ETH별로 다음이 나옵니다.
+        <ul>
+          <li><b>신호 long</b>(상승) 또는 <b>exit</b>(하락): 상승이면 봇이 매수하고, 하락이면 보유분을 팝니다.</li>
+          <li><b>펀딩비 최근 7일 평균</b>: "과열"이면 그날은 새로 사지 않습니다.</li>
+          <li><b>"지금 진입한다면"</b>: 원금 1,000 USDT로 살 수량과 손절가 예시입니다.</li>
+        </ul>
+        주문은 나가지 않습니다. 아무 키나 누르면 창이 닫힙니다.
+        <div class="callout">"'python'은(는) 내부 또는 외부 명령… 이 아닙니다"가 나오면 파이썬이 설치되지 않은 것입니다. python.org에서 설치하고,
+          설치 첫 화면의 <b>"Add python.exe to PATH"</b>를 꼭 체크하세요.</div></div></div>
+
+      <div class="step"><div class="n">2</div><div><b>모의 운용 시작</b><br>
+        <code>run_paper.bat</code>을 더블클릭합니다. 검은 창이 열리고 "시작: 모드 paper…"가 보이면 정상입니다.
+        <ul>
+          <li>실제 주문 없이 바이비트 공개 시세로 가상 계좌(시작 잔고 2,100 USDT)를 운용합니다.</li>
+          <li><b>검은 창을 닫으면 봇도 멈춥니다.</b> 켜 둔 채로 두세요. PC 절전 모드도 꺼 두세요.</li>
+          <li>매매 판단은 <b>매일 한국 시각 09:02</b>에 하루 한 번입니다. 켜자마자 매수하지 않는 것이 정상입니다.</li>
+        </ul></div></div>
+
+      <div class="step"><div class="n">3</div><div><b>이 화면에 봇 폴더 연결</b><br>
+        아래 <b>「봇 폴더 선택」</b> → <code>hullbot</code> 폴더 선택 → 브라우저가 "파일 보기/수정 허용"을 물으면 <b>허용</b>.
+        <br>연결되면 「운영 현황」의 <b>모의 paper</b> 카드에 초록 점과 <b>"실행 중"</b>이 보입니다.
+        다음부터 이 HTML을 열면 <b>「다시 연결」</b> 버튼만 누르면 됩니다.</div></div>
+
+      <div class="step"><div class="n">4</div><div><b>매일 확인</b><br>
+        09:02 이후 이 화면을 열어 카드의 <b>신호</b>, <b>보유 여부</b>, <b>손절가</b>를 봅니다. 자세한 내역은 아래 「매매 기록」 탭에 있습니다.
+        <br><span class="sub">바로 진입하는 모습을 보고 싶으면 hullbot 폴더 주소창에 <code>cmd</code>를 입력하고 Enter를 눌러 명령창을 연 뒤
+          <code>python bot.py --mode paper --decide-now</code>를 입력하세요. 지금 신호로 한 번 판단하고 끝납니다(모의·데모·테스트넷만 가능).</span></div></div>
+    </details>
+
+    <details>
+      <summary>화면 읽는 법 — 운영 현황 카드</summary>
+      <table>
+        <tr><th>표시</th><th>뜻</th></tr>
+        <tr><td><span class="dot on"></span>실행 중 · n초 전 저장</td><td>봇이 켜져 있습니다. 봇은 1분마다 상태 파일을 저장하는데, 그 저장이 최근 3분 안에 있었다는 뜻입니다.</td></tr>
+        <tr><td><span class="dot"></span>꺼짐 · 마지막 …</td><td>봇이 꺼져 있습니다(검은 창이 닫혔거나 PC가 잠들었음). 해당 bat 파일을 다시 실행하세요.</td></tr>
+        <tr><td>사용 기록 없음</td><td>그 모드로는 아직 한 번도 실행하지 않았습니다.</td></tr>
+        <tr><td><span class="chip long">상승</span> / <span class="chip exit">하락</span></td><td>마지막 일일 신호와 그 시각(한국 시각)입니다. 상승이면 매수 대상, 하락이면 보유분 매도 대상입니다.</td></tr>
+        <tr><td><span class="chip long">보유</span></td><td>포지션을 들고 있습니다. 수량은 현물 1배와 선물 1배의 합입니다.</td></tr>
+        <tr><td>손절가</td><td>가격이 여기까지 내려가면 자동으로 팝니다(원금의 약 5% 손실). 펀딩비가 정산될 때마다 조금씩 바뀝니다.</td></tr>
+        <tr><td>펀딩</td><td>선물을 들고 있는 동안 정산 주기마다(봇 기본값 8시간) 주고받는 비용입니다. −는 낸 돈, +는 받은 돈입니다.</td></tr>
+        <tr><td><span class="chip warn">진입 처리 중</span></td><td>주문을 내는 중입니다. 몇 분 넘게 계속되면 「봇 로그」 탭을 확인하세요.</td></tr>
+        <tr><td><span class="chip warn">손절 주문 확인 안 됨</span></td><td>거래소에 손절 주문이 아직 걸리지 않았습니다. 봇이 1분마다 다시 시도하고, 그동안 봇이 직접 가격을 감시합니다.</td></tr>
+        <tr><td><span class="chip warn">재진입 제한</span></td><td>같은 상승 신호 안에서 손절을 두 번 당했습니다. 신호가 하락으로 바뀌었다가 다시 상승할 때까지 사지 않습니다(규칙 ①).</td></tr>
+        <tr><td class="warn">진입 안 함: …</td><td>상승 신호인데도 사지 않은 이유입니다(펀딩비 과열, 재진입 제한, STOP 파일 등).</td></tr>
+        <tr><td>실현손익</td><td>팔아서 확정된 손익의 합계입니다(수수료·펀딩 포함). 보유 중인 포지션의 평가손익은 포함되지 않습니다.</td></tr>
+      </table>
+    </details>
+
+    <details>
+      <summary>자주 하는 일</summary>
+      <table>
+        <tr><th>하고 싶은 것</th><th>방법</th></tr>
+        <tr><td>새로 사지 않게 잠시 멈추기</td><td>「운영 현황」 오른쪽 위의 <b>신규 진입 멈춤 (STOP)</b>을 체크합니다. 보유 중인 포지션의 손절 관리는 계속됩니다. 체크를 풀면 다시 삽니다.</td></tr>
+        <tr><td>봇 끄기</td><td>봇의 검은 창을 클릭하고 <kbd>Ctrl</kbd>+<kbd>C</kbd>를 누릅니다. <b>보유 포지션과 거래소에 걸어 둔 손절 주문은 그대로 남습니다.</b> 다시 켜면 이어서 관리합니다.</td></tr>
+        <tr><td>원금(투자 금액) 바꾸기</td><td>「설정」 탭에서 <code>fixed_usdt</code>의 숫자를 바꾸고 「저장」을 누른 뒤, 봇을 껐다 켭니다(봇은 켤 때만 설정을 읽음).</td></tr>
+        <tr><td>지난 매매 보기</td><td>「매매 기록」 탭에서 모드를 고릅니다. 심볼·이벤트 필터와 검색을 쓸 수 있고, 위쪽에 실현손익 합계가 나옵니다.</td></tr>
+        <tr><td>오류 확인</td><td>「봇 로그」 탭에서 빨간색(ERROR)·주황색(WARNING) 줄을 봅니다.</td></tr>
+        <tr><td>PC를 껐을 때</td><td>거래소에 걸린 손절 주문은 계속 작동합니다. 하지만 매일 신호 판단, 손절가 갱신, 봇 감시는 멈춥니다. 다시 켜면 bat 파일을 다시 실행하세요.</td></tr>
+      </table>
+    </details>
+
+    <details>
+      <summary>모의 다음 단계 — 데모 트레이딩, 실계정 (API 키 필요)</summary>
+      <div class="callout bad"><b>API 키는 저(Claude)를 포함해 누구에게도 보내지 마세요.</b> 키는 hullbot 폴더의 <code>.env</code> 파일에 본인이 직접 붙여넣습니다.
+        이 화면은 .env를 읽지 않습니다. 키가 없으면 봇은 데모·실계정 모드를 시작하지 않고 "<i>.env 파일에 … API_KEY / … API_SECRET 을 넣어 주세요</i>"라고 알리며 멈춥니다.</div>
+      <div class="step"><div class="n">A</div><div><b>데모 트레이딩</b> (실제 시세 + 가상 자금, 실계정 전에 꼭)
+        <ol>
+          <li>bybit.com에 로그인하고 <b>데모 트레이딩</b>으로 전환한 뒤 API 키를 만듭니다. 권한은 <b>계약(Contract) 주문·포지션 + 현물(Spot) 거래</b>만 켜고, 출금·이체는 끕니다.</li>
+          <li>데모 계정의 통합거래계정 <b>담보(Collateral) 설정에서 BTC·ETH를 켭니다</b>. 포지션 모드는 <b>단방향(One-Way)</b>으로 둡니다.</li>
+          <li><code>.env.example</code>을 복사해 이름을 <code>.env</code>로 바꾸고, <code>BYBIT_DEMO_API_KEY</code>, <code>BYBIT_DEMO_API_SECRET</code>에 붙여넣습니다.</li>
+          <li>명령창에서 <code>python bot.py --mode demo --decide-now</code>를 실행해 한 번 진입해 봅니다.
+            바이비트 화면에서 현물 보유, 선물 포지션(원금의 약 1배), 선물 손절가, <b>현물 '조건부 주문'의 매도 주문</b>을 확인하세요.</li>
+          <li>문제가 없으면 <code>run_demo.bat</code>으로 며칠 돌려 이 화면의 <b>데모 demo</b> 카드에서 손절가 갱신과 기록을 확인합니다.</li>
+        </ol></div></div>
+      <div class="step"><div class="n live">B</div><div><b>실계정</b> (실제 돈)
+        <ol>
+          <li><b>봇 전용 서브계정</b>을 만듭니다. 다른 코인이 섞이면 봇이 현물 보유를 잘못 판단합니다.</li>
+          <li>서브계정에 USDT를 <b>원금 합계 + 약 5%</b> 넣습니다(기본 설정이면 2,000 + 100).</li>
+          <li>담보 설정, 단방향 모드, API 키 권한을 데모와 똑같이 맞춥니다. 키에는 <b>IP 제한</b>을 거는 것을 권장합니다.</li>
+          <li><code>.env</code>의 <code>BYBIT_API_KEY</code>, <code>BYBIT_API_SECRET</code>에 직접 입력하고 <code>run_live.bat</code>을 실행합니다. <b>LIVE</b>를 입력해야 시작됩니다.</li>
+          <li>처음에는 작은 원금으로 시작하고, 기록을 확인한 뒤 늘리세요.</li>
+        </ol></div></div>
+      <p class="sub">투자 조언이 아닙니다. 봇은 과거 자료로 검증한 규칙을 실행할 뿐 수익을 보장하지 않습니다. 실제 손절 손실은 수수료와 체결 미끄러짐 때문에 원금의 약 5.15% 이상이고, 급락·갭이면 더 큽니다(봇 README 6절).</p>
+    </details>
+
+    <details>
+      <summary>설정 항목 (config.json)</summary>
+      <table>
+        <tr><th>키</th><th>기본값</th><th>뜻</th></tr>
+        <tr><td><code>symbols</code></td><td>BTCUSDT, ETHUSDT</td><td>거래할 코인</td></tr>
+        <tr><td><code>fixed_usdt</code></td><td>각 1,000</td><td>코인별 고정 원금(USDT). 수익은 재투자하지 않음</td></tr>
+        <tr><td><code>leverage</code></td><td>2</td><td>레버리지. 10을 넘으면 봇이 실행을 거부함</td></tr>
+        <tr><td><code>stop_pct</code></td><td>0.05</td><td>원금 대비 손절 비율(0.05 = 5% 손실에서 손절)</td></tr>
+        <tr><td><code>max_reentry</code></td><td>1</td><td>규칙 ①: 같은 상승 신호 안에서 재진입 횟수. <code>null</code>이면 제한 없음</td></tr>
+        <tr><td><code>funding_filter</code></td><td>켜짐, 7일, 하루 0.1%</td><td>규칙 C: 펀딩비 7일 평균이 이보다 높으면 새 진입 안 함. <code>exit_when_hot: true</code>면 보유분도 청산</td></tr>
+        <tr><td><code>spot_half</code></td><td>true</td><td>규칙 D: 2배 중 1배는 현물, 1배는 선물(펀딩비 절반). <code>false</code>면 선물만으로 2배</td></tr>
+        <tr><td><code>capital_mode</code></td><td>fixed</td><td>원금 방식. spot_half는 fixed에서만 동작</td></tr>
+        <tr><td><code>margin_buffer</code></td><td>0.99</td><td>USDT 잔고의 99%를 넘게 진입하지 않음</td></tr>
+        <tr><td><code>paper_start_usdt</code></td><td>2100</td><td>모의 계좌 시작 잔고</td></tr>
+        <tr><td><code>decision_delay_sec</code> · <code>max_late_hours</code> · <code>loop_sec</code></td><td>120 · 6 · 60</td><td>결정 시각(00:00 UTC + 120초 = 한국 09:02), 늦게 켜졌을 때 그날 진입을 건너뛰는 기준(시간), 확인 주기(초)</td></tr>
+        <tr><td><code>mode</code></td><td>paper</td><td>bat 파일로 실행하면 bat의 모드가 우선함</td></tr>
+      </table>
+      <p class="sub">출처: 봇 README_ko.md 4절. 저장할 때 이 화면이 봇이 거부할 값을 미리 걸러 주고, 이전 설정은 config.json.bak으로 보관합니다.</p>
+    </details>
+
+    <details>
+      <summary>문제 해결</summary>
+      <table>
+        <tr><th>증상</th><th>할 일</th></tr>
+        <tr><td>"이 브라우저는 폴더 접근을 지원하지 않습니다"</td><td>이 HTML 파일을 우클릭하고 <b>연결 프로그램 → Chrome 또는 Microsoft Edge</b>로 여세요.</td></tr>
+        <tr><td>"이 폴더에 bot.py가 없습니다"</td><td>「폴더 바꾸기」를 누르고 bot.py가 바로 들어 있는 <code>hullbot</code> 폴더를 고르세요. 압축 파일 안에 폴더가 한 겹 더 있을 수 있습니다.</td></tr>
+        <tr><td>카드가 계속 "꺼짐"</td><td>봇 검은 창이 열려 있는지 확인하세요. 창에 오류가 보이면 「봇 로그」 탭을 확인하세요.</td></tr>
+        <tr><td>매매 기록을 읽지 못함</td><td>journal 파일을 엑셀로 열어 두었으면 닫고 「새로고침」을 누르세요. 봇은 그동안에도 매매를 계속합니다.</td></tr>
+        <tr><td>봇 창에 ".env 파일에 … 넣어 주세요"</td><td>데모·테스트넷·실계정은 API 키가 필요합니다. 위 「모의 다음 단계」를 보세요. 키 없이 하려면 <code>run_paper.bat</code>을 쓰세요.</td></tr>
+        <tr><td>봇 창에 오류 코드(10003, 110007 등)</td><td>봇 README_ko.md 7절 「자주 나올 오류」 표를 확인하세요.</td></tr>
+        <tr><td>매번 「다시 연결」을 눌러야 함</td><td>정상입니다. 브라우저가 보안상 폴더 권한을 다시 묻습니다.</td></tr>
+      </table>
+    </details>
+  </section>
+
   <section class="card" id="connect">
     <h2>봇 폴더 연결</h2>
-    <p class="sub">bot.py가 있는 폴더(hullbot)를 선택하세요. 한 번 선택하면 다음부터는 "다시 연결" 버튼만 누르면 됩니다. 파일은 이 PC 밖으로 나가지 않습니다.</p>
+    <p class="sub"><b>처음이세요? 위 「설명서」의 1~3단계를 먼저 따라 하세요.</b> bot.py가 있는 폴더(hullbot)를 선택하세요. 한 번 선택하면 다음부터는 "다시 연결" 버튼만 누르면 됩니다. 파일은 이 PC 밖으로 나가지 않습니다.</p>
     <div class="row"><button class="pri" id="pick">봇 폴더 선택</button><button id="reconnect" hidden>다시 연결</button></div>
   </section>
 
@@ -177,7 +336,7 @@ async function useDir(handle) {
   dir = handle;
   try { await kv("put", handle); } catch {}
   $("#dir").textContent = "봇 폴더: " + (handle.name || "(선택됨)");
-  $("#connect").hidden = true; $("#app").hidden = false;
+  $("#connect").hidden = true; $("#app").hidden = false; $("#guide").hidden = true;
   let hasBot = true; try { await dir.getFileHandle("bot.py"); } catch { hasBot = false; }
   $("#notice").textContent = hasBot ? "" : "이 폴더에 bot.py가 없습니다. hullbot 폴더를 다시 선택하세요.";
   $("#view").innerHTML = "";
@@ -361,6 +520,9 @@ $("#tabs").onclick = e => { if (!e.target.dataset.tab) return; tab = e.target.da
 $("#mode").onchange = () => { try { localStorage.setItem("mode", $("#mode").value); } catch {} $("#view").innerHTML = ""; loadView(); };
 $("#refresh").onclick = () => { if (tab !== "config") $("#view").innerHTML = ""; loadView(); loadStatus(); };
 setInterval(() => { loadStatus(); if (tab !== "config" && !document.activeElement?.closest?.("#view")) loadView(); }, 15000);
+// 설명서: 폴더 연결 전에는 펼쳐 두고, 연결 후에는 「설명서」 버튼으로 열고 닫음
+$("#guideBtn").onclick = () => { const g = $("#guide"); g.hidden = !g.hidden; if (!g.hidden) g.scrollIntoView({behavior: "smooth"}); };
+$("#guideClose").onclick = () => { $("#guide").hidden = true; };
 window.useDir = useDir; // 점검(test_console.mjs)용
 </script>
 </body>

@@ -25,6 +25,13 @@ page.on("dialog", d => { alerts.push(d.message()); d.accept(); });
 page.on("pageerror", e => { throw e; });
 await page.goto(`http://127.0.0.1:${server.address().port}/`);
 
+// 설명서: 연결 전에는 펼쳐져 있음
+assert.ok(await page.isVisible("#guide") && await page.isVisible("text=처음 시작하기"));
+if (process.env.SHOTS) for (const [w, n] of [[1280, "desktop"], [390, "mobile"]]) {
+  await page.setViewportSize({ width: w, height: 900 }); await page.screenshot({ path: `${process.env.SHOTS}/guide_${n}.png`, fullPage: true });
+}
+await page.setViewportSize({ width: 1280, height: 900 });
+
 await page.evaluate(async files => {
   const root = await navigator.storage.getDirectory();
   for (const [path, text] of Object.entries(files)) {
@@ -39,6 +46,9 @@ const text = sel => page.textContent(sel);
 
 // 운영 현황: 모의(보유 중인 두 다리 포지션) / 테스트넷(손절 2번 → 재진입 제한, 실현손익 합계)
 await page.waitForSelector("#bots .bot");
+assert.ok(!(await page.isVisible("#guide")));                                 // 연결 후 접힘
+await page.click("#guideBtn"); assert.ok(await page.isVisible("#guide"));
+await page.click("#guideClose"); assert.ok(!(await page.isVisible("#guide")));
 const [paper, , testnet, live] = await page.$$eval("#bots .bot", els => els.map(e => e.textContent.replace(/\s+/g, " ")));
 for (const s of ["실행 중", "모의 계좌 USDT", "XUSDT", "상승", "보유", "현물 9.975062 + 선물 9.984", "97.63", "펀딩 -1.00"]) assert.ok(paper.includes(s), `모의 카드에 "${s}" 없음: ${paper}`);
 for (const s of ["BTCUSDT", "ETHUSDT", "재진입 제한", "실현손익 -84.82 USDT (2회)", "하락", "마지막 청산"]) assert.ok(testnet.includes(s), `테스트넷 카드에 "${s}" 없음: ${testnet}`);
@@ -46,13 +56,13 @@ assert.match(live, /사용 기록 없음/);
 
 // 매매 기록: 테스트넷, 기본 '매매만' = 진입 2 + 청산 1 + 포지션 종료 1 + 진입 안 함(재진입 제한) 1, 한국시각 변환
 await page.selectOption("#mode", "testnet"); await page.waitForSelector("#fEv");
-assert.equal(await page.$$eval("tbody tr", t => t.length), 5);
+assert.equal(await page.$$eval("#view tbody tr", t => t.length), 5);
 assert.match(await text("#view"), /5건 · 실현손익 합계 -84\.82 USDT/);
-assert.match(await text("tbody tr:last-child"), /2026-05-01 09:02/);         // 00:02:05 UTC → 09:02 KST
-await page.selectOption("#fEv", "all"); await page.waitForFunction(() => document.querySelectorAll("tbody tr").length === 14);
-await page.selectOption("#fEv", "stop"); await page.waitForFunction(() => document.querySelectorAll("tbody tr").length === 3);
+assert.match(await text("#view tbody tr:last-child"), /2026-05-01 09:02/);         // 00:02:05 UTC → 09:02 KST
+await page.selectOption("#fEv", "all"); await page.waitForFunction(() => document.querySelectorAll("#view tbody tr").length === 14);
+await page.selectOption("#fEv", "stop"); await page.waitForFunction(() => document.querySelectorAll("#view tbody tr").length === 3);
 await page.selectOption("#fSym", "ETHUSDT"); await page.selectOption("#fEv", "일일 신호");
-await page.waitForFunction(() => document.querySelectorAll("tbody tr").length === 3);
+await page.waitForFunction(() => document.querySelectorAll("#view tbody tr").length === 3);
 
 // 로그·상태 (.env는 어디에도 보이지 않아야 함)
 await page.selectOption("#mode", "paper");
