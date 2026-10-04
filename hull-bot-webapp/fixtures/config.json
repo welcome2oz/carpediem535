@@ -1,0 +1,20 @@
+{
+  "mode": "paper",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "leverage": 2,
+  "stop_pct": 0.05,
+  "max_reentry": 1,
+  "funding_filter": {"enabled": true, "days": 7, "max_daily_avg": 0.001, "exit_when_hot": false},
+  "spot_half": true,
+  "capital_mode": "fixed",
+  "fixed_usdt": {"BTCUSDT": 1000, "ETHUSDT": 1000},
+  "weights": {"BTCUSDT": 0.5, "ETHUSDT": 0.5},
+  "margin_buffer": 0.99,
+  "paper_start_usdt": 2100,
+  "paper_fee_rate": 0.00055,
+  "paper_spot_fee_rate": 0.001,
+  "decision_delay_sec": 120,
+  "max_late_hours": 6,
+  "loop_sec": 60,
+  "hull_length": 55
+}

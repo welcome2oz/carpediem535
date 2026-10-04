@@ -1,0 +1,33 @@
+{
+ "last_daily": "2026-05-03",
+ "sym": {
+  "BTCUSDT": {
+   "status": "flat",
+   "last_exit_ms": 1777698000000,
+   "last_exit_kind": "stop",
+   "last_entry_ms": 1777680121000
+  },
+  "ETHUSDT": {
+   "status": "flat"
+  }
+ },
+ "swing": {
+  "BTCUSDT": {
+   "stops": 2,
+   "blocked": true,
+   "last_sig_day": "2026-05-02"
+  },
+  "ETHUSDT": {
+   "stops": 0,
+   "blocked": false,
+   "last_sig_day": "2026-05-02"
+  }
+ },
+ "daily_done": {
+  "BTCUSDT": "2026-05-03",
+  "ETHUSDT": "2026-05-03"
+ },
+ "entry_tried": {
+  "BTCUSDT": "2026-05-02"
+ }
+}

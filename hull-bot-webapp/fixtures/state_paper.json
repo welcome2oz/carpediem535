@@ -1,0 +1,31 @@
+{
+ "last_daily": "2026-10-04",
+ "sym": {
+  "XUSDT": {
+   "status": "long",
+   "link": "hull-XUSD-20261004000200-E",
+   "capital": 1000.0,
+   "want_s": 9.985047,
+   "qty": 19.959061953,
+   "avg": 100.0500276366871,
+   "qty_s": 9.975061952999999,
+   "avg_s": 100.10010010010011,
+   "qty_p": 9.984,
+   "avg_p": 100.0,
+   "entry_fee": 0.54912,
+   "entry_ms": 1791072120000,
+   "funding_net": -0.9984,
+   "stop": 97.63,
+   "fund_sync": 1791100800000,
+   "spot_stop_link": "paper-stop",
+   "stop_ok": true,
+   "fund_checked": 1791100980000
+  }
+ },
+ "swing": {
+  "XUSDT": {
+   "stops": 0,
+   "blocked": false
+  }
+ }
+}
