@@ -511,6 +511,32 @@
       max-width: calc(100vw - 32px); box-shadow: 0 16px 32px -16px rgba(20, 19, 18, 0.5);
     }
 
+    /* Data error banner / data exchange */
+    .alert { margin: 18px 0 0; padding: 18px 22px; border: 1px solid var(--accent); border-left-width: 4px; background: var(--accent-soft); }
+    .alert h3 { margin: 6px 0 8px; font-family: var(--serif-ko); font-weight: 600; font-size: 18px; letter-spacing: -0.03em; }
+    .alert ul { margin: 0 0 8px; padding-left: 18px; font-size: 12.5px; }
+    .alert p { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+    .paste {
+      width: 100%; resize: vertical; min-height: 110px; padding: 10px 12px; border: 1px solid var(--ink); border-radius: 0;
+      background: var(--paper); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink);
+    }
+    .paste:focus { outline: none; border-color: var(--accent); }
+    .report { margin-top: 12px; font-size: 12px; line-height: 1.55; }
+    .report:empty { display: none; }
+    .report .ok, .report .bad { padding: 10px 12px; border-left: 3px solid var(--ink); background: var(--paper); }
+    .report .bad { border-left-color: var(--accent); background: var(--accent-soft); }
+    .report b { font-weight: 700; }
+    .report ul { margin: 6px 0 0; padding-left: 16px; }
+    .report .warn-list { color: var(--mute); }
+    .changelog { margin-top: 18px; font-size: 12px; }
+    .changelog summary { cursor: pointer; font-weight: 600; }
+    .changelog ol { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); }
+    .changelog li { margin-bottom: 6px; word-break: break-all; }
+    .src-link { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+    .src-link:hover { color: var(--accent); }
+    .no-src { color: var(--faint); font-size: 10.5px; white-space: nowrap; }
+    .topline .edition { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
     /* Colophon */
     .colophon { margin-top: 88px; border-top: 3px double var(--ink); }
     .colophon-inner { display: grid; grid-template-columns: auto 1fr; gap: 12px 48px; padding-top: 22px; padding-bottom: 36px; font-size: 11.5px; color: var(--mute); }
@@ -527,7 +553,7 @@
        ================================================================ -->
   <header>
     <div class="wrap"><div class="topline">
-      <p class="eyebrow">Vol. 2026<span class="hide-xs"> &nbsp;·&nbsp; Q4 Edition</span></p>
+      <p class="eyebrow edition" id="metaEdition"></p>
       <p class="eyebrow hide-sm">Global Raw Material Sourcing Report</p>
       <nav class="utility" aria-label="도구">
         <button id="btnOpenPortModal" type="button" class="link-btn">POD 매핑</button>
@@ -546,8 +572,8 @@
     <div class="wrap nameplate">
       <h1 class="logo">Sourcing</h1>
       <div class="nameplate-deck">
-        <p class="ko">글로벌 원재료 최적 소싱 리포트</p>
-        <p class="meta">생산국 5개 × 법인 거점 11개 × 원재료 6종 · 단위 USD/MT</p>
+        <p class="ko" id="metaTitle"></p>
+        <p class="meta" id="metaCounts"></p>
       </div>
     </div>
   </header>
@@ -594,6 +620,7 @@
       </div>
     </div>
     <p id="conditionLine" class="condition"></p>
+    <div id="dataAlert" class="alert hidden" role="alert"></div>
   </section>
 
   <main>
@@ -715,7 +742,7 @@
         <header class="block-head">
           <h3 class="block-title"><span class="block-num">03</span><span class="en">Freight</span><span class="ko">인근 기준항별 해상물류비 · 55개 항로</span></h3>
           <div class="block-tools">
-            <p class="block-note">Drewry WCI·IACI / SCFI · Freightos FBX · Cogoport 스팟 운임 평균</p>
+            <p class="block-note" id="freightSourcesNote"></p>
             <button id="btnExportFreightTabCsv" type="button" class="ghost-btn">CSV 다운로드</button>
           </div>
         </header>
@@ -724,7 +751,7 @@
           <div class="param">
             <label class="eyebrow" for="inputContainerTons">컨테이너당 적재중량</label>
             <input id="inputContainerTons" class="big-input num" type="number" min="5" max="30" step="0.5" value="24" />
-            <small>MT/Box · 현재 품목 기준 (철강 24, 수지 22, EPS 17)</small>
+            <small id="tonsHint"></small>
           </div>
           <div class="param">
             <label class="eyebrow" for="inputInsuranceRate">적하보험료율</label>
@@ -776,7 +803,7 @@
         <header class="block-head">
           <h3 class="block-title"><span class="block-num">04</span><span class="en">Tariff</span><span class="ko">관세 · FTA · 무역구제 — <span id="tariffTabMaterialName"></span></span></h3>
           <div class="block-tools">
-            <p class="block-note">MFN · FTA 양허 · AD/CVD · 미국 232조/301조 · 브라질 AD 및 ZFM 감면</p>
+            <p class="block-note">MFN · FTA 양허 · AD/CVD · 232조/301조 · <span id="tariffSourceCount"></span></p>
             <button id="btnExportTariffTabCsv" type="button" class="ghost-btn">전 품목 CSV (330구간)</button>
           </div>
         </header>
@@ -809,8 +836,8 @@
     <div class="wrap colophon-inner">
       <span class="logo-sm">Sourcing</span>
       <div>
-        <p><b>검증 출처</b> — Drewry WCI·IACI · SCFI · Freightos FBX · Cogoport FCL · 한국 무역위·재경부 제2026-80호(중국산 도금·컬러강판 AD) · World Bank WITS · ITC MAcMap · USITC HTS · Brazil Secex</p>
-        <p style="margin-top:6px">모든 금액은 USD/MT. 운임·관세 수치는 원본 데이터 패키지(global_sourcing_freight_tariff_raw_data_2026.xlsx) 기준이며, 이 화면은 그 값을 재계산해 보여줄 뿐 새 수치를 만들지 않습니다.</p>
+        <p><b>출처</b> — <span id="metaSources"></span></p>
+        <p style="margin-top:6px" id="metaStatus"></p>
       </div>
     </div>
   </footer>
@@ -846,16 +873,10 @@
           <label class="check"><input id="chkApplyFta" type="checkbox" checked /><span>FTA 양허세율 우선 적용</span></label>
           <label class="check"><input id="chkApplyAdCvd" type="checkbox" checked /><span>반덤핑·232조 등 무역구제 반영</span></label>
           <label class="check"><input id="chkIncludeDomestic" type="checkbox" checked /><span>동일국 내수 조달도 순위에 포함</span></label>
-          <label class="check"><input id="chkManausZfm" type="checkbox" /><span>브라질 마나우스 ZFM 기본관세 88% 감면<small>반덤핑 관세는 감면 대상 아님</small></span></label>
+          <label class="check"><input id="chkManausZfm" type="checkbox" /><span><span id="zfmLabel"></span><small>반덤핑 관세는 감면 대상 아님</small></span></label>
           <div class="row-field">
-            <span>한국 수입 · 중국산 도금·컬러강판 AD</span>
-            <select id="selectKrChinaSteelAd" class="select">
-              <option value="25.75">25.75% 기본</option>
-              <option value="22.34">22.34% 바오터우</option>
-              <option value="26.28">26.28% 수강징탕</option>
-              <option value="33.67">33.67% 윈스톤</option>
-              <option value="0">0% 미적용</option>
-            </select>
+            <span id="scenarioLabel"></span>
+            <select id="selectKrChinaSteelAd" class="select"></select>
           </div>
         </div>
       </section>
@@ -863,13 +884,38 @@
       <section class="drawer-sec">
         <h4><span class="n">03</span>거점별 보세 · 용도 면제</h4>
         <div class="stack" style="margin-top:12px">
-          <label class="check"><input id="chkBondedTH" type="checkbox" /><span>태국 — BOI·가전 제조용 AD 면제<small>중국산 GI 35.5% · PCM 29.8%, 한국산 AD 면제</small></span></label>
+          <label class="check"><input id="chkBondedTH" type="checkbox" /><span>태국 — BOI·가전 제조용 AD 면제<small id="thExemptHint"></small></span></label>
           <label class="check"><input id="chkBondedID" type="checkbox" /><span>인니 — KB·KITE 보세 면제</span></label>
           <label class="check"><input id="chkBondedIN" type="checkbox" /><span>인도 — AA·SEZ 수출용 면제</span></label>
           <label class="check"><input id="chkBondedKR" type="checkbox" /><span>한국 — 보세공장 수출분 AD 면제</span></label>
           <label class="check"><input id="chkBondedEG" type="checkbox" /><span>이집트 — SCZONE 보세 면제</span></label>
         </div>
         <p class="fine">참고: 현재 계산식에는 태국 항목만 연결되어 있습니다. 인니·인도·한국·이집트 체크박스는 원본과 마찬가지로 가격에 영향을 주지 않으며, 상단 '보세' 전환 시 수출·보세 조건에서만 일괄 0%가 적용됩니다.</p>
+      </section>
+
+      <section class="drawer-sec" id="dataSection">
+        <h4><span class="n">04</span>데이터 교체 · Gemini<small id="dataAsOf"></small></h4>
+        <p class="hint">① JSON을 내려받아 Gemini에게 갱신을 맡기고 → ② 돌려받은 JSON(전체 또는 바뀐 부분만)을 붙여넣으면 자동 검증 후 바로 반영됩니다 → ③ 결과가 맞으면 HTML로 저장하세요. 프롬프트는 GEMINI_HANDOFF.md에 있습니다.</p>
+        <dl class="ledger" id="dataStatus"></dl>
+        <div class="presets">
+          <button type="button" id="btnDataExport" class="ghost-btn">① 현재 데이터 JSON 내려받기</button>
+        </div>
+        <label class="eyebrow" for="dataPasteBox" style="display:block;margin:18px 0 6px">② Gemini 답변 붙여넣기 (```json 코드블록 그대로 가능)</label>
+        <textarea id="dataPasteBox" class="paste" rows="6" spellcheck="false" placeholder='{"freight": {"asOf": "...", "routes": [ ... ]}, "changeLog": [ ... ]}'></textarea>
+        <div class="presets">
+          <button type="button" id="btnDataApply" class="ghost-btn">검증 후 적용</button>
+          <label for="inputDataImport" class="ghost-btn" style="cursor:pointer">JSON 파일 불러오기</label>
+          <input type="file" id="inputDataImport" accept=".json,application/json,text/plain" class="hidden" />
+          <button type="button" id="btnDataRevert" class="ghost-btn is-quiet">원래 데이터로 되돌리기</button>
+        </div>
+        <div id="dataImportReport" class="report"></div>
+        <div class="presets" style="margin-top:18px">
+          <button type="button" id="btnDataSaveHtml" class="ink-btn">③ 이 데이터로 HTML 저장</button>
+        </div>
+        <details class="changelog" id="changeLogBox">
+          <summary>변경 기록 (changeLog)</summary>
+          <div id="changeLogList"></div>
+        </details>
       </section>
     </div>
   </aside>
@@ -907,271 +953,825 @@
   <div id="hoverTooltipPopup" class="hidden" role="tooltip"><div id="hoverTooltipContent" class="tt"></div></div>
   <div id="toastNotice" class="hidden" role="status" aria-live="polite"></div>
 
+  <!-- ==================================================================
+       DASHBOARD DATA — 데이터를 바꾸는 곳은 여기뿐입니다.
+       구조·키·id는 그대로 두고 값만 바꾸세요. 규칙과 Gemini 프롬프트: GEMINI_HANDOFF.md
+       (화면의 Settings › 04 데이터 교체 를 쓰면 이 구간을 직접 고칠 필요가 없습니다)
+       ================================================================== -->
+  <script type="application/json" id="dashboard-data">
+{
+  "schemaVersion": 1,
+  "meta": {
+    "title": "글로벌 원재료 최적 소싱 리포트",
+    "edition": "Vol. 2026 · Q4 Edition",
+    "asOf": "2026-Q4",
+    "preparedBy": "Gemini 초안 (출처 URL 미기재 · 미검증)",
+    "sources": [
+      {"name":"Drewry WCI·IACI","url":""},
+      {"name":"SCFI","url":""},
+      {"name":"Freightos FBX","url":""},
+      {"name":"Cogoport FCL","url":""},
+      {"name":"한국 무역위·재경부 제2026-80호 (중국산 도금·컬러강판 AD)","url":""},
+      {"name":"World Bank WITS","url":""},
+      {"name":"ITC MAcMap","url":""},
+      {"name":"USITC HTS","url":""},
+      {"name":"Brazil Secex","url":""}
+    ]
+  },
+  "origins": [
+    {"id":"KR","name":"한국","en":"South Korea","port":"부산항 / 광양항 (KRPUS/KRKAN)","shortPort":"부산항(KRPUS)"},
+    {"id":"CN","name":"중국","en":"China","port":"상하이항 / 천진신강항 (CNSHA/CNTSN)","shortPort":"상하이/천진항"},
+    {"id":"TH","name":"태국","en":"Thailand","port":"람차방항 (THLCH)","shortPort":"람차방항(THLCH)"},
+    {"id":"IN","name":"인도","en":"India","port":"나바셰바항 / 문드라항 (INNSA/INMUN)","shortPort":"나바셰바/문드라항"},
+    {"id":"US","name":"미국","en":"USA","port":"휴스턴항 / 서배너항 (USHOU/USSAV)","shortPort":"휴스턴/서배너항"}
+  ],
+  "destinations": [
+    {"id":"KR","countryCode":"KR","name":"한국 (부산)","shortName":"부산","city":"부산 (Busan)","port":"부산항","locode":"KRPUS","distanceKm":"25km (항만직결)","inlandBoxUsd":220,"portNote":"부산항 하역 후 인근 산단 직결 (중국산 도금·컬러강판 수입 시 2026.6.12 시행 반덤핑 관세 22.34~33.67% 부과)"},
+    {"id":"CN","countryCode":"CN","name":"중국 (천진)","shortName":"천진","city":"천진 (Tianjin)","port":"천진 신강항","locode":"CNTSN","distanceKm":"45km (항만직결)","inlandBoxUsd":240,"portNote":"화북 최대 관문인 천진 신강항(Xingang, CNTSN) 직기항 기준"},
+    {"id":"IN_NOI","countryCode":"IN","name":"인도 (노이다)","shortName":"노이다","city":"노이다 (Noida)","port":"문드라항+ICD다드리","locode":"INMUN→INDAD","distanceKm":"1,150km (철도ICD)","inlandBoxUsd":960,"portNote":"구자라트 문드라항(INMUN) 하역 후 전용 화물철도(CONCOR)로 노이다 인근 ICD Dadri 통관"},
+    {"id":"IN_PUN","countryCode":"IN","name":"인도 (푸네)","shortName":"푸네","city":"푸네 (Pune)","port":"나바셰바항 (JNPT)","locode":"INNSA","distanceKm":"150km (고속도로)","inlandBoxUsd":380,"portNote":"뭄바이 나바셰바항(JNPT, INNSA) 하역 후 푸네 공단까지 트럭 직송"},
+    {"id":"TH","countryCode":"TH","name":"태국 (람차방)","shortName":"람차방","city":"람차방 (Laem Chabang)","port":"람차방항","locode":"THLCH","distanceKm":"30km (항만직결)","inlandBoxUsd":210,"portNote":"태국 최대 심수항인 람차방항(THLCH) 하역 후 동부경제회랑(EEC) 공단 직결"},
+    {"id":"ID","countryCode":"ID","name":"인니 (자카르타)","shortName":"자카르타","city":"자카르타 (Jakarta)","port":"탄중프리옥항","locode":"IDJKT","distanceKm":"40km (수도권산단)","inlandBoxUsd":260,"portNote":"자카르타 관문 탄중프리옥항(IDJKT) 하역 후 인근 공단 트럭 운송"},
+    {"id":"SA","countryCode":"SA","name":"사우디 (제다)","shortName":"제다","city":"제다 (Jeddah)","port":"제다 이슬람항","locode":"SAJED","distanceKm":"25km (항만직결)","inlandBoxUsd":250,"portNote":"홍해 연안 최대 항만인 제다 이슬람항(SAJED) 직기항 기준 (인도 서안 출발 최단거리)"},
+    {"id":"BR","countryCode":"BR","name":"브라질 (마나우스)","shortName":"마나우스","city":"마나우스 (Manaus)","port":"마나우스항","locode":"BRMAO","distanceKm":"15km (아마존하천항)","inlandBoxUsd":280,"portNote":"아마존강 피더선으로 마나우스항(BRMAO) 직기항 (마나우스 자유무역지대 ZFM 88% 관세감면 지역)"},
+    {"id":"EG","countryCode":"EG","name":"이집트 (카이로)","shortName":"카이로","city":"카이로 (Cairo)","port":"아인소크나/알렉산드리아","locode":"EGSOK/EGALY","distanceKm":"120km (소크나→카이로)","inlandBoxUsd":350,"portNote":"아시아발은 홍해측 아인소크나항(EGSOK, 카이로 120km) 하역 최적, 미국발은 지중해 알렉산드리아항 기준"},
+    {"id":"US","countryCode":"US","name":"미국 (클락스빌)","shortName":"클락스빌","city":"클락스빌 (Clarksville, TN)","port":"서배너/찰스턴항+철도","locode":"USSAV/USCHS","distanceKm":"720km (IPI 철도)","inlandBoxUsd":1350,"portNote":"미 동안 서배너항(USSAV)·찰스턴항 입항 후 철도 연계 (무역확장법 232조 철강 50% 및 301조 적용)"},
+    {"id":"NO","countryCode":"NO","name":"노르웨이 (오슬로)","shortName":"오슬로","city":"오슬로 (Oslo)","port":"오슬로항","locode":"NOOSL","distanceKm":"20km (항만직결)","inlandBoxUsd":290,"portNote":"유럽 허브항 환적 후 오슬로항(NOOSL) 직기항 (노르웨이 공산품 전 품목 관세 0%)"}
+  ],
+  "materials": [
+    {"id":"GI","category":"Steel","name":"GI (도금강판)","fullName":"GI (용융아연도금강판)","hsCode":"7210.49","defaultTonsPerBox":24,"defaultFob":{"KR":740,"CN":655,"TH":775,"IN":720,"US":960},"fobSource":""},
+    {"id":"PCM","category":"Steel","name":"PCM (컬러강판)","fullName":"PCM (컬러강판/도장강판)","hsCode":"7210.70","defaultTonsPerBox":24,"defaultFob":{"KR":920,"CN":815,"TH":950,"IN":885,"US":1180},"fobSource":""},
+    {"id":"ABS","category":"Resin","name":"ABS (합성수지)","fullName":"ABS (고기능성 합성수지)","hsCode":"3903.30","defaultTonsPerBox":22,"defaultFob":{"KR":1380,"CN":1310,"TH":1365,"IN":1440,"US":1510},"fobSource":""},
+    {"id":"CPP","category":"Resin","name":"복합PP (Compound)","fullName":"복합PP (Compound PP)","hsCode":"3902.30","defaultTonsPerBox":22,"defaultFob":{"KR":1120,"CN":1050,"TH":1095,"IN":1135,"US":1190},"fobSource":""},
+    {"id":"HIPS","category":"Resin","name":"HIPS (폴리스티렌)","fullName":"HIPS (내충격성 폴리스티렌)","hsCode":"3903.19","defaultTonsPerBox":22,"defaultFob":{"KR":1240,"CN":1185,"TH":1220,"IN":1275,"US":1340},"fobSource":""},
+    {"id":"EPS","category":"Resin","name":"EPS (발포PS)","fullName":"EPS (발포 폴리스티렌)","hsCode":"3903.11","defaultTonsPerBox":17,"defaultFob":{"KR":1190,"CN":1130,"TH":1165,"IN":1210,"US":1280},"fobSource":""}
+  ],
+  "freight": {
+    "asOf": "2026-Q4",
+    "unit": "USD/Box",
+    "sources": {
+      "drewry": {
+        "name": "Drewry WCI·IACI / SCFI",
+        "url": ""
+      },
+      "freightos": {
+        "name": "Freightos Baltic Index (FBX)",
+        "url": ""
+      },
+      "cogoport": {
+        "name": "Cogoport FCL Spot",
+        "url": ""
+      }
+    },
+    "routes": [
+      {"orig":"KR","dest":"KR","drewry":380,"freightos":410,"cogoport":390},
+      {"orig":"KR","dest":"CN","drewry":540,"freightos":580,"cogoport":520},
+      {"orig":"KR","dest":"IN_NOI","drewry":2480,"freightos":2620,"cogoport":2410},
+      {"orig":"KR","dest":"IN_PUN","drewry":2320,"freightos":2450,"cogoport":2260},
+      {"orig":"KR","dest":"TH","drewry":1420,"freightos":1510,"cogoport":1380},
+      {"orig":"KR","dest":"ID","drewry":1680,"freightos":1750,"cogoport":1620},
+      {"orig":"KR","dest":"SA","drewry":7450,"freightos":7680,"cogoport":7290},
+      {"orig":"KR","dest":"BR","drewry":8150,"freightos":8450,"cogoport":7980},
+      {"orig":"KR","dest":"EG","drewry":5650,"freightos":5920,"cogoport":5480},
+      {"orig":"KR","dest":"US","drewry":9850,"freightos":10120,"cogoport":9640},
+      {"orig":"KR","dest":"NO","drewry":3780,"freightos":3950,"cogoport":3690},
+      {"orig":"CN","dest":"KR","drewry":490,"freightos":530,"cogoport":470},
+      {"orig":"CN","dest":"CN","drewry":360,"freightos":390,"cogoport":350},
+      {"orig":"CN","dest":"IN_NOI","drewry":2340,"freightos":2480,"cogoport":2280},
+      {"orig":"CN","dest":"IN_PUN","drewry":2180,"freightos":2310,"cogoport":2120},
+      {"orig":"CN","dest":"TH","drewry":1690,"freightos":1740,"cogoport":1610},
+      {"orig":"CN","dest":"ID","drewry":1850,"freightos":1920,"cogoport":1780},
+      {"orig":"CN","dest":"SA","drewry":7620,"freightos":7850,"cogoport":7440},
+      {"orig":"CN","dest":"BR","drewry":8380,"freightos":8690,"cogoport":8190},
+      {"orig":"CN","dest":"EG","drewry":5780,"freightos":6040,"cogoport":5620},
+      {"orig":"CN","dest":"US","drewry":10220,"freightos":10450,"cogoport":9980},
+      {"orig":"CN","dest":"NO","drewry":3680,"freightos":3840,"cogoport":3590},
+      {"orig":"TH","dest":"KR","drewry":1280,"freightos":1350,"cogoport":1240},
+      {"orig":"TH","dest":"CN","drewry":1290,"freightos":1360,"cogoport":1230},
+      {"orig":"TH","dest":"IN_NOI","drewry":1790,"freightos":1890,"cogoport":1720},
+      {"orig":"TH","dest":"IN_PUN","drewry":1640,"freightos":1730,"cogoport":1580},
+      {"orig":"TH","dest":"TH","drewry":320,"freightos":350,"cogoport":310},
+      {"orig":"TH","dest":"ID","drewry":980,"freightos":1050,"cogoport":940},
+      {"orig":"TH","dest":"SA","drewry":6680,"freightos":6920,"cogoport":6510},
+      {"orig":"TH","dest":"BR","drewry":8620,"freightos":8910,"cogoport":8420},
+      {"orig":"TH","dest":"EG","drewry":5250,"freightos":5520,"cogoport":5100},
+      {"orig":"TH","dest":"US","drewry":10650,"freightos":10920,"cogoport":10380},
+      {"orig":"TH","dest":"NO","drewry":4020,"freightos":4190,"cogoport":3910},
+      {"orig":"IN","dest":"KR","drewry":1850,"freightos":1960,"cogoport":1780},
+      {"orig":"IN","dest":"CN","drewry":1820,"freightos":1940,"cogoport":1750},
+      {"orig":"IN","dest":"IN_NOI","drewry":480,"freightos":510,"cogoport":460},
+      {"orig":"IN","dest":"IN_PUN","drewry":360,"freightos":390,"cogoport":350},
+      {"orig":"IN","dest":"TH","drewry":1480,"freightos":1560,"cogoport":1410},
+      {"orig":"IN","dest":"ID","drewry":1590,"freightos":1680,"cogoport":1520},
+      {"orig":"IN","dest":"SA","drewry":3180,"freightos":3390,"cogoport":3040},
+      {"orig":"IN","dest":"BR","drewry":7250,"freightos":7540,"cogoport":7080},
+      {"orig":"IN","dest":"EG","drewry":3420,"freightos":3590,"cogoport":3280},
+      {"orig":"IN","dest":"US","drewry":7450,"freightos":7720,"cogoport":7260},
+      {"orig":"IN","dest":"NO","drewry":3290,"freightos":3460,"cogoport":3150},
+      {"orig":"US","dest":"KR","drewry":1950,"freightos":2100,"cogoport":1890},
+      {"orig":"US","dest":"CN","drewry":1980,"freightos":2120,"cogoport":1910},
+      {"orig":"US","dest":"IN_NOI","drewry":2780,"freightos":2940,"cogoport":2660},
+      {"orig":"US","dest":"IN_PUN","drewry":2650,"freightos":2800,"cogoport":2540},
+      {"orig":"US","dest":"TH","drewry":2350,"freightos":2480,"cogoport":2260},
+      {"orig":"US","dest":"ID","drewry":2480,"freightos":2620,"cogoport":2390},
+      {"orig":"US","dest":"SA","drewry":4450,"freightos":4680,"cogoport":4320},
+      {"orig":"US","dest":"BR","drewry":3680,"freightos":3890,"cogoport":3540},
+      {"orig":"US","dest":"EG","drewry":3280,"freightos":3450,"cogoport":3160},
+      {"orig":"US","dest":"US","drewry":580,"freightos":610,"cogoport":560},
+      {"orig":"US","dest":"NO","drewry":1580,"freightos":1690,"cogoport":1510}
+    ]
+  },
+  "tariffs": {
+    "asOf": "2026-Q4",
+    "rows": [
+      {"mat":"GI","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"CN","mfn":5,"fta":2.5,"ftaName":"RCEP 양허","adCvd":0,"note":"천진 신강항 통관: RCEP 및 중-아세안 양허세율","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"IN_NOI","mfn":11,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 철강 0% (BIS 인증 필수)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"IN_PUN","mfn":11,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 철강 0% (BIS 인증 필수)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"TH","mfn":7,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":15.2,"note":"한-아세안 0%이나 태국 도금/도장강판 AD 유의","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"ID","mfn":15,"fta":0,"ftaName":"한-인니 CEPA","adCvd":5.5,"note":"IK-CEPA 0% 양허 (세이프가드/SNI 반영)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"SA","mfn":10,"fta":5,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 감축 세율 (5%)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"US","mfn":0,"fta":0,"ftaName":"KORUS","adCvd":55.2,"note":"미국 232조 철강관세 50% + 도금강판 AD/CVD(~5.2%)","sourceUrl":""},
+      {"mat":"GI","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":25.75,"note":"재정경제부고시 제2026-80호(26.6.12) 중국산 도금·컬러강판 잠정 반덤핑 관세(22.34~33.67%, 기본 25.75%) 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"IN_NOI","mfn":11,"fta":11,"ftaName":"-","adCvd":18.5,"note":"문드라항→ICD다드리: 중국산 도금·컬러강판 인도 반덤핑(AD) 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"IN_PUN","mfn":11,"fta":11,"ftaName":"-","adCvd":18.5,"note":"나바셰바항(푸네): 중국산 도금·컬러강판 인도 반덤핑(AD) 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"TH","mfn":7,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":35.5,"note":"태국 DFT 중국산 GI/PCM 반덤핑 관세 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"ID","mfn":15,"fta":5,"ftaName":"중-ASEAN FTA","adCvd":18,"note":"인니 KADI 중국산 도금·컬러강판 반덤핑 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":48,"note":"브라질 Secex 중국산 GI·PCM 확정 반덤핑 관세 부과","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":15,"note":"아인소크나항→카이로: 기본 12% + 중국산 도금·컬러강판 AD","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":125,"note":"미국 232조(50%) + 301조(25%) + 초고율 AD/CVD","sourceUrl":""},
+      {"mat":"GI","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"CN","mfn":5,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"천진 신강항 통관: RCEP 및 중-아세안 양허세율","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"IN_NOI","mfn":11,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 양허세율","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"IN_PUN","mfn":11,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 양허세율","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"ID","mfn":15,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"아세안 역내(ATIGA) 0% 무관세 및 AD 미대상","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":52.5,"note":"미국 232조(50%) + 우회수출 조사 리스크","sourceUrl":""},
+      {"mat":"GI","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"CN","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"TH","mfn":7,"fta":2.5,"ftaName":"태국-인도 FTA","adCvd":0,"note":"태국-인도 FTA 양허 (AD 미대상)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"ID","mfn":15,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":5.5,"note":"아세안-인도 협정세율 및 세이프가드","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":10.6,"note":"철강 쿼터/AD 반영","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":5,"note":"아인소크나항→카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":56.5,"note":"미국 232조(50%) + 인도산 도금재 AD/CVD(~6.5%)","sourceUrl":""},
+      {"mat":"GI","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"CN","mfn":5,"fta":5,"ftaName":"-","adCvd":25,"note":"천진 신강항 통관: 대미 보복관세(+25%) 부과","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"IN_NOI","mfn":11,"fta":11,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"IN_PUN","mfn":11,"fta":11,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"TH","mfn":7,"fta":7,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"ID","mfn":15,"fta":15,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"GI","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"CN","mfn":4,"fta":2.5,"ftaName":"RCEP 양허","adCvd":0,"note":"천진 신강항 통관: RCEP 및 중-아세안 양허세율","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"IN_NOI","mfn":11,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 철강 0% (BIS 인증 필수)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"IN_PUN","mfn":11,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 철강 0% (BIS 인증 필수)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"TH","mfn":7,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":12,"note":"한-아세안 0%이나 태국 도금/도장강판 AD 유의","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"ID","mfn":15,"fta":0,"ftaName":"한-인니 CEPA","adCvd":5.5,"note":"IK-CEPA 0% 양허 (세이프가드/SNI 반영)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"SA","mfn":10,"fta":5,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 감축 세율 (5%)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"US","mfn":0,"fta":0,"ftaName":"KORUS","adCvd":55.2,"note":"미국 232조 철강관세 50% + 도금강판 AD/CVD(~5.2%)","sourceUrl":""},
+      {"mat":"PCM","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":25.75,"note":"재정경제부고시 제2026-80호(26.6.12) 중국산 도금·컬러강판 잠정 반덤핑 관세(22.34~33.67%, 기본 25.75%) 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"IN_NOI","mfn":11,"fta":11,"ftaName":"-","adCvd":18.5,"note":"문드라항→ICD다드리: 중국산 도금·컬러강판 인도 반덤핑(AD) 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"IN_PUN","mfn":11,"fta":11,"ftaName":"-","adCvd":18.5,"note":"나바셰바항(푸네): 중국산 도금·컬러강판 인도 반덤핑(AD) 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"TH","mfn":7,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":29.8,"note":"태국 DFT 중국산 GI/PCM 반덤핑 관세 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"ID","mfn":15,"fta":5,"ftaName":"중-ASEAN FTA","adCvd":18,"note":"인니 KADI 중국산 도금·컬러강판 반덤핑 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":42.5,"note":"브라질 Secex 중국산 GI·PCM 확정 반덤핑 관세 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":15,"note":"아인소크나항→카이로: 기본 12% + 중국산 도금·컬러강판 AD","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":125,"note":"미국 232조(50%) + 301조(25%) + 초고율 AD/CVD","sourceUrl":""},
+      {"mat":"PCM","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"CN","mfn":4,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"천진 신강항 통관: RCEP 및 중-아세안 양허세율","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"IN_NOI","mfn":11,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 양허세율","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"IN_PUN","mfn":11,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 양허세율","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"ID","mfn":15,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"아세안 역내(ATIGA) 0% 무관세 및 AD 미대상","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":52.5,"note":"미국 232조(50%) + 우회수출 조사 리스크","sourceUrl":""},
+      {"mat":"PCM","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"CN","mfn":4,"fta":4,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"TH","mfn":7,"fta":2.5,"ftaName":"태국-인도 FTA","adCvd":0,"note":"태국-인도 FTA 양허 (AD 미대상)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"ID","mfn":15,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":5.5,"note":"아세안-인도 협정세율 및 세이프가드","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":36,"note":"브라질 인도산 PCM 확정 반덤핑 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":5,"note":"아인소크나항→카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"US","mfn":0,"fta":0,"ftaName":"-","adCvd":56.5,"note":"미국 232조(50%) + 인도산 도금재 AD/CVD(~6.5%)","sourceUrl":""},
+      {"mat":"PCM","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"KR","mfn":0,"fta":0,"ftaName":"WTO 철강 무관세","adCvd":0,"note":"부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"CN","mfn":4,"fta":4,"ftaName":"-","adCvd":25,"note":"천진 신강항 통관: 대미 보복관세(+25%) 부과","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"IN_NOI","mfn":11,"fta":11,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"IN_PUN","mfn":11,"fta":11,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"TH","mfn":7,"fta":7,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"ID","mfn":15,"fta":15,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"SA","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"사우디 철강 관세 10% (인도발 홍해 최단거리 우위)","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"BR","mfn":14.4,"fta":14.4,"ftaName":"-","adCvd":0,"note":"중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"EG","mfn":12,"fta":12,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 이집트 MFN 기본관세 12%","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"PCM","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"CN","mfn":6.5,"fta":4.5,"ftaName":"한-중 FTA","adCvd":0,"note":"한-중 FTA 양허세율","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"IN_NOI","mfn":8.25,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"IN_PUN","mfn":8.25,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"ID","mfn":10,"fta":0,"ftaName":"한-인니 CEPA","adCvd":0,"note":"IK-CEPA 합성수지 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"SA","mfn":5,"fta":0,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 수지 무관세","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"US","mfn":6.5,"fta":0,"ftaName":"KORUS","adCvd":12.5,"note":"2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"KR","mfn":6.5,"fta":3.2,"ftaName":"한-중 FTA / RCEP","adCvd":0,"note":"한-중 FTA 및 RCEP 양허세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"ID","mfn":10,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 0% 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":37.5,"note":"MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":0,"note":"한-아세안 FTA 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"CN","mfn":6.5,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"IN_NOI","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"IN_PUN","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"ID","mfn":10,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"ATIGA 역내 무관세(0%)","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":12.5,"note":"MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"한-인도 CEPA 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"ID","mfn":10,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"인도-아세안 FTA 양허","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":10,"note":"MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%","sourceUrl":""},
+      {"mat":"ABS","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-미 FTA","adCvd":0,"note":"KORUS 협정세율 0%","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":25,"note":"미·중 보복관세(+25%) 반영","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"TH","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"ID","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"ABS","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"CN","mfn":6.5,"fta":4.5,"ftaName":"한-중 FTA","adCvd":0,"note":"한-중 FTA 양허세율","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"IN_NOI","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"IN_PUN","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"ID","mfn":10,"fta":0,"ftaName":"한-인니 CEPA","adCvd":0,"note":"IK-CEPA 합성수지 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"SA","mfn":5,"fta":0,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 수지 무관세","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"US","mfn":6.5,"fta":0,"ftaName":"KORUS","adCvd":12.5,"note":"2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"KR","mfn":6.5,"fta":3.2,"ftaName":"한-중 FTA / RCEP","adCvd":0,"note":"한-중 FTA 및 RCEP 양허세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"ID","mfn":10,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 0% 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":37.5,"note":"MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":0,"note":"한-아세안 FTA 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"CN","mfn":6.5,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"IN_NOI","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"IN_PUN","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"ID","mfn":10,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"ATIGA 역내 무관세(0%)","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":12.5,"note":"MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"한-인도 CEPA 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"ID","mfn":10,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"인도-아세안 FTA 양허","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":10,"note":"MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%","sourceUrl":""},
+      {"mat":"CPP","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-미 FTA","adCvd":0,"note":"KORUS 협정세율 0%","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":25,"note":"미·중 보복관세(+25%) 반영","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"TH","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"ID","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"CPP","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"CN","mfn":6.5,"fta":0,"ftaName":"한-중 FTA","adCvd":0,"note":"한-중 FTA 양허세율","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"IN_NOI","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"IN_PUN","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"ID","mfn":10,"fta":0,"ftaName":"한-인니 CEPA","adCvd":0,"note":"IK-CEPA 합성수지 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"SA","mfn":5,"fta":0,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 수지 무관세","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"US","mfn":6.5,"fta":0,"ftaName":"KORUS","adCvd":12.5,"note":"2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-중 FTA / RCEP","adCvd":0,"note":"한-중 FTA 및 RCEP 양허세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"ID","mfn":10,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 0% 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":37.5,"note":"MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":0,"note":"한-아세안 FTA 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"CN","mfn":6.5,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"IN_NOI","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"IN_PUN","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"ID","mfn":10,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"ATIGA 역내 무관세(0%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":12.5,"note":"MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"한-인도 CEPA 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"ID","mfn":10,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"인도-아세안 FTA 양허","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":10,"note":"MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%","sourceUrl":""},
+      {"mat":"HIPS","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-미 FTA","adCvd":0,"note":"KORUS 협정세율 0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":25,"note":"미·중 보복관세(+25%) 반영","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"TH","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"ID","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"HIPS","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"KR","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (부산 (Busan) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"CN","mfn":6.5,"fta":0,"ftaName":"한-중 FTA","adCvd":0,"note":"한-중 FTA 양허세율","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"IN_NOI","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"문드라항→ICD다드리: 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"IN_PUN","mfn":8.25,"fta":2.5,"ftaName":"한-인도 CEPA","adCvd":0,"note":"나바셰바항(푸네): 한-인도 CEPA 수지 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"ID","mfn":10,"fta":0,"ftaName":"한-인니 CEPA","adCvd":0,"note":"IK-CEPA 합성수지 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"SA","mfn":5,"fta":0,"ftaName":"한-GCC FTA","adCvd":0,"note":"한-GCC FTA 수지 무관세","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"US","mfn":6.5,"fta":0,"ftaName":"KORUS","adCvd":12.5,"note":"2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"KR","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-중 FTA / RCEP","adCvd":0,"note":"한-중 FTA 및 RCEP 양허세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"CN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (천진 (Tianjin) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"ID","mfn":10,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 0% 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":37.5,"note":"MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"CN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-ASEAN FTA","adCvd":0,"note":"한-아세안 FTA 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"CN","mfn":6.5,"fta":0,"ftaName":"중-ASEAN FTA","adCvd":0,"note":"ACFTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"IN_NOI","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"문드라항→ICD다드리: 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"IN_PUN","mfn":8.25,"fta":2,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"나바셰바항(푸네): 인도-아세안 FTA 수지 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"TH","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (람차방 (Laem Chabang) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"ID","mfn":10,"fta":0,"ftaName":"ATIGA","adCvd":0,"note":"ATIGA 역내 무관세(0%)","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":12.5,"note":"MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"TH","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-인도 CEPA","adCvd":0,"note":"한-인도 CEPA 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"IN_NOI","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (노이다 (Noida) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"IN_PUN","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (푸네 (Pune) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"TH","mfn":5,"fta":0,"ftaName":"ASEAN FTA / RCEP","adCvd":0,"note":"아세안 역외 FTA 합성수지 0% 무관세","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"ID","mfn":10,"fta":5,"ftaName":"인도-ASEAN FTA","adCvd":0,"note":"인도-아세안 FTA 양허","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"아인소크나항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"US","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":10,"note":"MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%","sourceUrl":""},
+      {"mat":"EPS","orig":"IN","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"KR","mfn":6.5,"fta":0,"ftaName":"한-미 FTA","adCvd":0,"note":"KORUS 협정세율 0%","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"CN","mfn":6.5,"fta":6.5,"ftaName":"-","adCvd":25,"note":"미·중 보복관세(+25%) 반영","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"IN_NOI","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"IN_PUN","mfn":8.25,"fta":8.25,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"TH","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"ID","mfn":10,"fta":10,"ftaName":"-","adCvd":0,"note":"WTO/WITS 일반 MFN 세율 적용","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"SA","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"GCC 공동관세율 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"BR","mfn":12.6,"fta":12.6,"ftaName":"-","adCvd":0,"note":"Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"EG","mfn":5,"fta":5,"ftaName":"-","adCvd":0,"note":"알렉산드리아항→카이로: 합성수지 MFN 5.0%","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"US","mfn":0,"fta":0,"ftaName":"내수 조달 (관세 0%)","adCvd":0,"note":"동일 국가 내 조달 (클락스빌 (Clarksville, TN) 직송, 수입관세 면제)","sourceUrl":""},
+      {"mat":"EPS","orig":"US","dest":"NO","mfn":0,"fta":0,"ftaName":"노르웨이 무관세","adCvd":0,"note":"오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%","sourceUrl":""}
+    ]
+  },
+  "scenarios": {
+    "krChinaSteelAd": {
+      "label": "한국 수입 · 중국산 도금·컬러강판 AD",
+      "materials": ["GI","PCM"],
+      "orig": "CN",
+      "dest": "KR",
+      "default": 25.75,
+      "options": [
+        {"value":25.75,"label":"25.75% 기본"},
+        {"value":22.34,"label":"22.34% 바오터우"},
+        {"value":26.28,"label":"26.28% 수강징탕"},
+        {"value":33.67,"label":"33.67% 윈스톤"},
+        {"value":0,"label":"0% 미적용"}
+      ],
+      "sourceUrl": ""
+    }
+  },
+  "policy": {
+    "manausZfmBaseDutyMultiplier": 0.12,
+    "thailandAdExemptMaterials": ["GI","PCM"]
+  },
+  "changeLog": []
+}
+  </script>
+
   <script>
   (function () {
     'use strict';
 
+    // Snapshot of the page source before anything renders — used to save a new HTML with replaced data.
+    const PRISTINE_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
     // =========================================================================
-    // 1. MASTER DATA DEFINITIONS
+    // 1. DATA LAYER
+    //    Every number and text the dashboard shows comes from the JSON block
+    //    <script type="application/json" id="dashboard-data">. Edit data there
+    //    (or via Settings › 데이터 교체), never in this code.
     // =========================================================================
-    const ORIGINS = [
-      { id: 'KR', name: '한국', en: 'South Korea', port: '부산항 / 광양항 (KRPUS/KRKAN)', shortPort: '부산항(KRPUS)', flag: '🇰🇷' },
-      { id: 'CN', name: '중국', en: 'China', port: '상하이항 / 천진신강항 (CNSHA/CNTSN)', shortPort: '상하이/천진항', flag: '🇨🇳' },
-      { id: 'TH', name: '태국', en: 'Thailand', port: '람차방항 (THLCH)', shortPort: '람차방항(THLCH)', flag: '🇹🇭' },
-      { id: 'IN', name: '인도', en: 'India', port: '나바셰바항 / 문드라항 (INNSA/INMUN)', shortPort: '나바셰바/문드라항', flag: '🇮🇳' },
-      { id: 'US', name: '미국', en: 'USA', port: '휴스턴항 / 서배너항 (USHOU/USSAV)', shortPort: '휴스턴/서배너항', flag: '🇺🇸' }
-    ];
-
-    const DESTINATIONS = [
-      { id: 'KR', countryCode: 'KR', name: '한국 (부산)', shortName: '부산', city: '부산 (Busan)', port: '부산항', locode: 'KRPUS', flag: '🇰🇷', distanceKm: '25km (항만직결)', inlandBoxUsd: 220, portNote: '부산항 하역 후 인근 산단 직결 (중국산 도금·컬러강판 수입 시 2026.6.12 시행 반덤핑 관세 22.34~33.67% 부과)' },
-      { id: 'CN', countryCode: 'CN', name: '중국 (천진)', shortName: '천진', city: '천진 (Tianjin)', port: '천진 신강항', locode: 'CNTSN', flag: '🇨🇳', distanceKm: '45km (항만직결)', inlandBoxUsd: 240, portNote: '화북 최대 관문인 천진 신강항(Xingang, CNTSN) 직기항 기준' },
-      { id: 'IN_NOI', countryCode: 'IN', name: '인도 (노이다)', shortName: '노이다', city: '노이다 (Noida)', port: '문드라항+ICD다드리', locode: 'INMUN→INDAD', flag: '🇮🇳', distanceKm: '1,150km (철도ICD)', inlandBoxUsd: 960, portNote: '구자라트 문드라항(INMUN) 하역 후 전용 화물철도(CONCOR)로 노이다 인근 ICD Dadri 통관' },
-      { id: 'IN_PUN', countryCode: 'IN', name: '인도 (푸네)', shortName: '푸네', city: '푸네 (Pune)', port: '나바셰바항 (JNPT)', locode: 'INNSA', flag: '🇮🇳', distanceKm: '150km (고속도로)', inlandBoxUsd: 380, portNote: '뭄바이 나바셰바항(JNPT, INNSA) 하역 후 푸네 공단까지 트럭 직송' },
-      { id: 'TH', countryCode: 'TH', name: '태국 (람차방)', shortName: '람차방', city: '람차방 (Laem Chabang)', port: '람차방항', locode: 'THLCH', flag: '🇹🇭', distanceKm: '30km (항만직결)', inlandBoxUsd: 210, portNote: '태국 최대 심수항인 람차방항(THLCH) 하역 후 동부경제회랑(EEC) 공단 직결' },
-      { id: 'ID', countryCode: 'ID', name: '인니 (자카르타)', shortName: '자카르타', city: '자카르타 (Jakarta)', port: '탄중프리옥항', locode: 'IDJKT', flag: '🇮🇩', distanceKm: '40km (수도권산단)', inlandBoxUsd: 260, portNote: '자카르타 관문 탄중프리옥항(IDJKT) 하역 후 인근 공단 트럭 운송' },
-      { id: 'SA', countryCode: 'SA', name: '사우디 (제다)', shortName: '제다', city: '제다 (Jeddah)', port: '제다 이슬람항', locode: 'SAJED', flag: '🇸🇦', distanceKm: '25km (항만직결)', inlandBoxUsd: 250, portNote: '홍해 연안 최대 항만인 제다 이슬람항(SAJED) 직기항 기준 (인도 서안 출발 최단거리)' },
-      { id: 'BR', countryCode: 'BR', name: '브라질 (마나우스)', shortName: '마나우스', city: '마나우스 (Manaus)', port: '마나우스항', locode: 'BRMAO', flag: '🇧🇷', distanceKm: '15km (아마존하천항)', inlandBoxUsd: 280, portNote: '아마존강 피더선으로 마나우스항(BRMAO) 직기항 (마나우스 자유무역지대 ZFM 88% 관세감면 지역)' },
-      { id: 'EG', countryCode: 'EG', name: '이집트 (카이로)', shortName: '카이로', city: '카이로 (Cairo)', port: '아인소크나/알렉산드리아', locode: 'EGSOK/EGALY', flag: '🇪🇬', distanceKm: '120km (소크나→카이로)', inlandBoxUsd: 350, portNote: '아시아발은 홍해측 아인소크나항(EGSOK, 카이로 120km) 하역 최적, 미국발은 지중해 알렉산드리아항 기준' },
-      { id: 'US', countryCode: 'US', name: '미국 (클락스빌)', shortName: '클락스빌', city: '클락스빌 (Clarksville, TN)', port: '서배너/찰스턴항+철도', locode: 'USSAV/USCHS', flag: '🇺🇸', distanceKm: '720km (IPI 철도)', inlandBoxUsd: 1350, portNote: '미 동안 서배너항(USSAV)·찰스턴항 입항 후 철도 연계 (무역확장법 232조 철강 50% 및 301조 적용)' },
-      { id: 'NO', countryCode: 'NO', name: '노르웨이 (오슬로)', shortName: '오슬로', city: '오슬로 (Oslo)', port: '오슬로항', locode: 'NOOSL', flag: '🇳🇴', distanceKm: '20km (항만직결)', inlandBoxUsd: 290, portNote: '유럽 허브항 환적 후 오슬로항(NOOSL) 직기항 (노르웨이 공산품 전 품목 관세 0%)' }
-    ];
-
-    const MATERIALS = [
-      { id: 'GI', category: 'Steel', name: 'GI (도금강판)', fullName: 'GI (용융아연도금강판)', hsCode: '7210.49', defaultTonsPerBox: 24, defaultFob: { KR: 740, CN: 655, TH: 775, IN: 720, US: 960 } },
-      { id: 'PCM', category: 'Steel', name: 'PCM (컬러강판)', fullName: 'PCM (컬러강판/도장강판)', hsCode: '7210.70', defaultTonsPerBox: 24, defaultFob: { KR: 920, CN: 815, TH: 950, IN: 885, US: 1180 } },
-      { id: 'ABS', category: 'Resin', name: 'ABS (합성수지)', fullName: 'ABS (고기능성 합성수지)', hsCode: '3903.30', defaultTonsPerBox: 22, defaultFob: { KR: 1380, CN: 1310, TH: 1365, IN: 1440, US: 1510 } },
-      { id: 'CPP', category: 'Resin', name: '복합PP (Compound)', fullName: '복합PP (Compound PP)', hsCode: '3902.30', defaultTonsPerBox: 22, defaultFob: { KR: 1120, CN: 1050, TH: 1095, IN: 1135, US: 1190 } },
-      { id: 'HIPS', category: 'Resin', name: 'HIPS (폴리스티렌)', fullName: 'HIPS (내충격성 폴리스티렌)', hsCode: '3903.19', defaultTonsPerBox: 22, defaultFob: { KR: 1240, CN: 1185, TH: 1220, IN: 1275, US: 1340 } },
-      { id: 'EPS', category: 'Resin', name: 'EPS (발포PS)', fullName: 'EPS (발포 폴리스티렌)', hsCode: '3903.11', defaultTonsPerBox: 17, defaultFob: { KR: 1190, CN: 1130, TH: 1165, IN: 1210, US: 1280 } }
-    ];
-
-    const INITIAL_FREIGHT_BOX = {
-      KR: {
-        KR:     { drewry: 380,  freightos: 410,  cogoport: 390 },
-        CN:     { drewry: 540,  freightos: 580,  cogoport: 520 },
-        IN_NOI: { drewry: 2480, freightos: 2620, cogoport: 2410 },
-        IN_PUN: { drewry: 2320, freightos: 2450, cogoport: 2260 },
-        TH:     { drewry: 1420, freightos: 1510, cogoport: 1380 },
-        ID:     { drewry: 1680, freightos: 1750, cogoport: 1620 },
-        SA:     { drewry: 7450, freightos: 7680, cogoport: 7290 },
-        BR:     { drewry: 8150, freightos: 8450, cogoport: 7980 },
-        EG:     { drewry: 5650, freightos: 5920, cogoport: 5480 },
-        US:     { drewry: 9850, freightos: 10120, cogoport: 9640 },
-        NO:     { drewry: 3780, freightos: 3950, cogoport: 3690 }
-      },
-      CN: {
-        KR:     { drewry: 490,  freightos: 530,  cogoport: 470 },
-        CN:     { drewry: 360,  freightos: 390,  cogoport: 350 },
-        IN_NOI: { drewry: 2340, freightos: 2480, cogoport: 2280 },
-        IN_PUN: { drewry: 2180, freightos: 2310, cogoport: 2120 },
-        TH:     { drewry: 1690, freightos: 1740, cogoport: 1610 },
-        ID:     { drewry: 1850, freightos: 1920, cogoport: 1780 },
-        SA:     { drewry: 7620, freightos: 7850, cogoport: 7440 },
-        BR:     { drewry: 8380, freightos: 8690, cogoport: 8190 },
-        EG:     { drewry: 5780, freightos: 6040, cogoport: 5620 },
-        US:     { drewry: 10220, freightos: 10450, cogoport: 9980 },
-        NO:     { drewry: 3680, freightos: 3840, cogoport: 3590 }
-      },
-      TH: {
-        KR:     { drewry: 1280, freightos: 1350, cogoport: 1240 },
-        CN:     { drewry: 1290, freightos: 1360, cogoport: 1230 },
-        IN_NOI: { drewry: 1790, freightos: 1890, cogoport: 1720 },
-        IN_PUN: { drewry: 1640, freightos: 1730, cogoport: 1580 },
-        TH:     { drewry: 320,  freightos: 350,  cogoport: 310 },
-        ID:     { drewry: 980,  freightos: 1050, cogoport: 940 },
-        SA:     { drewry: 6680, freightos: 6920, cogoport: 6510 },
-        BR:     { drewry: 8620, freightos: 8910, cogoport: 8420 },
-        EG:     { drewry: 5250, freightos: 5520, cogoport: 5100 },
-        US:     { drewry: 10650, freightos: 10920, cogoport: 10380 },
-        NO:     { drewry: 4020, freightos: 4190, cogoport: 3910 }
-      },
-      IN: {
-        KR:     { drewry: 1850, freightos: 1960, cogoport: 1780 },
-        CN:     { drewry: 1820, freightos: 1940, cogoport: 1750 },
-        IN_NOI: { drewry: 480,  freightos: 510,  cogoport: 460 },
-        IN_PUN: { drewry: 360,  freightos: 390,  cogoport: 350 },
-        TH:     { drewry: 1480, freightos: 1560, cogoport: 1410 },
-        ID:     { drewry: 1590, freightos: 1680, cogoport: 1520 },
-        SA:     { drewry: 3180, freightos: 3390, cogoport: 3040 },
-        BR:     { drewry: 7250, freightos: 7540, cogoport: 7080 },
-        EG:     { drewry: 3420, freightos: 3590, cogoport: 3280 },
-        US:     { drewry: 7450, freightos: 7720, cogoport: 7260 },
-        NO:     { drewry: 3290, freightos: 3460, cogoport: 3150 }
-      },
-      US: {
-        KR:     { drewry: 1950, freightos: 2100, cogoport: 1890 },
-        CN:     { drewry: 1980, freightos: 2120, cogoport: 1910 },
-        IN_NOI: { drewry: 2780, freightos: 2940, cogoport: 2660 },
-        IN_PUN: { drewry: 2650, freightos: 2800, cogoport: 2540 },
-        TH:     { drewry: 2350, freightos: 2480, cogoport: 2260 },
-        ID:     { drewry: 2480, freightos: 2620, cogoport: 2390 },
-        SA:     { drewry: 4450, freightos: 4680, cogoport: 4320 },
-        BR:     { drewry: 3680, freightos: 3890, cogoport: 3540 },
-        EG:     { drewry: 3280, freightos: 3450, cogoport: 3160 },
-        US:     { drewry: 580,  freightos: 610,  cogoport: 560 },
-        NO:     { drewry: 1580, freightos: 1690, cogoport: 1510 }
-      }
+    const STRUCTURE = {
+      origins: ['KR', 'CN', 'TH', 'IN', 'US'],
+      destinations: ['KR', 'CN', 'IN_NOI', 'IN_PUN', 'TH', 'ID', 'SA', 'BR', 'EG', 'US', 'NO'],
+      materials: ['GI', 'PCM', 'ABS', 'CPP', 'HIPS', 'EPS']
     };
+    const FREIGHT_SOURCES = ['drewry', 'freightos', 'cogoport'];
+    const DATA_KEYS = ['schemaVersion', 'meta', 'origins', 'destinations', 'materials', 'freight', 'tariffs', 'scenarios', 'policy', 'changeLog'];
 
-    function buildInitialTariffMatrix(krChinaAdRate = 25.75) {
-      const db = {};
-      MATERIALS.forEach(mat => {
-        db[mat.id] = {};
-        const isSteel = mat.category === 'Steel';
-        ORIGINS.forEach(orig => {
-          db[mat.id][orig.id] = {};
-          DESTINATIONS.forEach(dest => {
-            const cCode = dest.countryCode;
-            if (orig.id === cCode) {
-              db[mat.id][orig.id][dest.id] = {
-                mfn: 0.0, fta: 0.0, hasFta: false,
-                ftaName: '내수 조달 (관세 0%)',
-                adCvd: 0.0,
-                note: `동일 국가 내 조달 (${dest.city} 직송, 수입관세 면제)`
-              };
-              return;
-            }
-            let mfn = 0, fta = null, ftaName = '-', adCvd = 0, note = 'WTO/WITS 일반 MFN 세율 적용';
+    let DATA, ORIGINS, DESTINATIONS, MATERIALS, INITIAL_FREIGHT_BOX, SCENARIO, POLICY;
 
-            if (cCode === 'KR') {
-              if (isSteel) {
-                mfn = 0.0; fta = 0.0; ftaName = 'WTO 철강 무관세';
-                if (orig.id === 'CN') {
-                  adCvd = Number(krChinaAdRate);
-                  note = '재정경제부고시 제2026-80호(26.6.12) 중국산 도금·컬러강판 잠정 반덤핑 관세(22.34~33.67%, 기본 25.75%) 부과';
-                } else {
-                  note = '부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상';
-                }
-              } else {
-                mfn = 6.5;
-                if (orig.id === 'US') { fta = 0.0; ftaName = '한-미 FTA'; note = 'KORUS 협정세율 0%'; }
-                else if (orig.id === 'TH') { fta = 0.0; ftaName = '한-ASEAN FTA'; note = '한-아세안 FTA 0%'; }
-                else if (orig.id === 'IN') { fta = 0.0; ftaName = '한-인도 CEPA'; note = '한-인도 CEPA 0%'; }
-                else if (orig.id === 'CN') {
-                  fta = (mat.id === 'ABS' || mat.id === 'CPP') ? 3.2 : 0.0;
-                  ftaName = '한-중 FTA / RCEP';
-                  note = '한-중 FTA 및 RCEP 양허세율 적용';
-                }
-              }
-            } else if (cCode === 'CN') {
-              if (isSteel) {
-                mfn = (mat.id === 'GI') ? 5.0 : 4.0;
-                if (orig.id === 'KR' || orig.id === 'TH') {
-                  fta = (orig.id === 'TH') ? 0.0 : 2.5;
-                  ftaName = orig.id === 'TH' ? '중-ASEAN FTA' : 'RCEP 양허';
-                  note = '천진 신강항 통관: RCEP 및 중-아세안 양허세율';
-                } else if (orig.id === 'US') {
-                  adCvd = 25.0; note = '천진 신강항 통관: 대미 보복관세(+25%) 부과';
-                }
-              } else {
-                mfn = 6.5;
-                if (orig.id === 'TH') { fta = 0.0; ftaName = '중-ASEAN FTA'; note = 'ACFTA 합성수지 0% 무관세'; }
-                else if (orig.id === 'KR') { fta = (mat.id === 'EPS' || mat.id === 'HIPS') ? 0.0 : 4.5; ftaName = '한-중 FTA'; note = '한-중 FTA 양허세율'; }
-                else if (orig.id === 'US') { adCvd = 25.0; note = '미·중 보복관세(+25%) 반영'; }
-              }
-            } else if (cCode === 'IN') {
-              const podLabel = dest.id === 'IN_NOI' ? '문드라항→ICD다드리' : '나바셰바항(푸네)';
-              if (isSteel) {
-                mfn = 11.0;
-                if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인도 CEPA'; note = `${podLabel}: 한-인도 CEPA 철강 0% (BIS 인증 필수)`; }
-                else if (orig.id === 'TH') { fta = 5.0; ftaName = '인도-ASEAN FTA'; note = `${podLabel}: 인도-아세안 FTA 양허세율`; }
-                else if (orig.id === 'CN') { adCvd = 18.5; note = `${podLabel}: 중국산 도금·컬러강판 인도 반덤핑(AD) 부과`; }
-              } else {
-                mfn = 8.25;
-                if (orig.id === 'KR') { fta = (mat.id === 'ABS') ? 0.0 : 2.5; ftaName = '한-인도 CEPA'; note = `${podLabel}: 한-인도 CEPA 수지 양허`; }
-                else if (orig.id === 'TH') { fta = 2.0; ftaName = '인도-ASEAN FTA'; note = `${podLabel}: 인도-아세안 FTA 수지 양허`; }
-              }
-            } else if (cCode === 'TH') {
-              if (isSteel) {
-                mfn = 7.0;
-                if (orig.id === 'CN') { fta = 0.0; ftaName = '중-ASEAN FTA'; adCvd = (mat.id === 'GI') ? 35.5 : 29.8; note = '태국 DFT 중국산 GI/PCM 반덤핑 관세 부과'; }
-                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-ASEAN FTA'; adCvd = (mat.id === 'GI') ? 15.2 : 12.0; note = '한-아세안 0%이나 태국 도금/도장강판 AD 유의'; }
-                else if (orig.id === 'IN') { fta = 2.5; ftaName = '태국-인도 FTA'; note = '태국-인도 FTA 양허 (AD 미대상)'; }
-              } else {
-                mfn = 5.0;
-                if (orig.id === 'KR' || orig.id === 'CN' || orig.id === 'IN') {
-                  fta = 0.0; ftaName = 'ASEAN FTA / RCEP'; note = '아세안 역외 FTA 합성수지 0% 무관세';
-                }
-              }
-            } else if (cCode === 'ID') {
-              if (isSteel) {
-                mfn = 15.0;
-                if (orig.id === 'TH') { fta = 0.0; ftaName = 'ATIGA'; note = '아세안 역내(ATIGA) 0% 무관세 및 AD 미대상'; }
-                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인니 CEPA'; adCvd = 5.5; note = 'IK-CEPA 0% 양허 (세이프가드/SNI 반영)'; }
-                else if (orig.id === 'CN') { fta = 5.0; ftaName = '중-ASEAN FTA'; adCvd = 18.0; note = '인니 KADI 중국산 도금·컬러강판 반덤핑 부과'; }
-                else if (orig.id === 'IN') { fta = 5.0; ftaName = '인도-ASEAN FTA'; adCvd = 5.5; note = '아세안-인도 협정세율 및 세이프가드'; }
-              } else {
-                mfn = 10.0;
-                if (orig.id === 'TH') { fta = 0.0; ftaName = 'ATIGA'; note = 'ATIGA 역내 무관세(0%)'; }
-                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인니 CEPA'; note = 'IK-CEPA 합성수지 0%'; }
-                else if (orig.id === 'CN') { fta = 0.0; ftaName = '중-ASEAN FTA'; note = 'ACFTA 0% 양허'; }
-                else if (orig.id === 'IN') { fta = 5.0; ftaName = '인도-ASEAN FTA'; note = '인도-아세안 FTA 양허'; }
-              }
-            } else if (cCode === 'SA') {
-              if (isSteel) {
-                mfn = 10.0;
-                if (orig.id === 'KR') { fta = 5.0; ftaName = '한-GCC FTA'; note = '한-GCC FTA 감축 세율 (5%)'; }
-                else { note = '사우디 철강 관세 10% (인도발 홍해 최단거리 우위)'; }
-              } else {
-                mfn = 5.0;
-                if (orig.id === 'KR') { fta = 0.0; ftaName = '한-GCC FTA'; note = '한-GCC FTA 수지 무관세'; }
-                else { note = 'GCC 공동관세율 5.0%'; }
-              }
-            } else if (cCode === 'BR') {
-              if (isSteel) {
-                mfn = 14.4;
-                if (orig.id === 'CN') { adCvd = (mat.id === 'GI') ? 48.0 : 42.5; note = '브라질 Secex 중국산 GI·PCM 확정 반덤핑 관세 부과'; }
-                else if (orig.id === 'IN') { adCvd = (mat.id === 'PCM') ? 36.0 : 10.6; note = mat.id === 'PCM' ? '브라질 인도산 PCM 확정 반덤핑 부과' : '철강 쿼터/AD 반영'; }
-                else { note = '중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)'; }
-              } else {
-                mfn = 12.6;
-                note = 'Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)';
-              }
-            } else if (cCode === 'US') {
-              if (isSteel) {
-                mfn = 0.0;
-                if (orig.id === 'KR') { fta = 0.0; ftaName = 'KORUS'; adCvd = 55.2; note = '미국 232조 철강관세 50% + 도금강판 AD/CVD(~5.2%)'; }
-                else if (orig.id === 'CN') { adCvd = 125.0; note = '미국 232조(50%) + 301조(25%) + 초고율 AD/CVD'; }
-                else if (orig.id === 'IN') { adCvd = 56.5; note = '미국 232조(50%) + 인도산 도금재 AD/CVD(~6.5%)'; }
-                else if (orig.id === 'TH') { adCvd = 52.5; note = '미국 232조(50%) + 우회수출 조사 리스크'; }
-              } else {
-                mfn = 6.5;
-                if (orig.id === 'KR') { fta = 0.0; ftaName = 'KORUS'; adCvd = 12.5; note = '2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용'; }
-                else if (orig.id === 'CN') { adCvd = 37.5; note = 'MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%'; }
-                else if (orig.id === 'TH') { adCvd = 12.5; note = 'MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%'; }
-                else if (orig.id === 'IN') { adCvd = 10.0; note = 'MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%'; }
-              }
-            } else if (cCode === 'EG') {
-              const egPort = orig.id === 'US' ? '알렉산드리아항' : '아인소크나항';
-              if (isSteel) {
-                mfn = 12.0;
-                if (orig.id === 'CN') { adCvd = 15.0; note = `${egPort}→카이로: 기본 12% + 중국산 도금·컬러강판 AD`; }
-                else if (orig.id === 'IN') { adCvd = 5.0; note = `${egPort}→카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)`; }
-                else { note = `${egPort}→카이로: 이집트 MFN 기본관세 12%`; }
-              } else {
-                mfn = 5.0; note = `${egPort}→카이로: 합성수지 MFN 5.0%`;
-              }
-            } else if (cCode === 'NO') {
-              mfn = 0.0; fta = 0.0; ftaName = '노르웨이 무관세';
-              note = '오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%';
-            }
+    const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+    const isStr = (v) => typeof v === 'string';
+    const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+    const isHttp = (u) => /^https?:\/\/\S+$/i.test(String(u || ''));
+    const routeKey = (r) => `${r.orig}>${r.dest}`;
+    const rowKey = (r) => `${r.mat}/${r.orig}>${r.dest}`;
+    const clone = (v) => JSON.parse(JSON.stringify(v));
 
-            db[mat.id][orig.id][dest.id] = {
-              mfn,
-              fta: fta !== null ? fta : mfn,
-              hasFta: fta !== null && fta < mfn,
-              ftaName,
-              adCvd,
-              note
-            };
-          });
+    // Returns { errors, warnings }. Errors block loading; warnings are shown but allowed.
+    function validateData(d) {
+      const E = [], W = [];
+      const cap = (list, label, max = 6) => {
+        if (!list.length) return [];
+        const head = list.slice(0, max).join(', ');
+        return [`${label}: ${head}${list.length > max ? ` 외 ${list.length - max}건` : ''}`];
+      };
+      if (!isObj(d)) return { errors: ['최상위 값이 JSON 객체({ ... })가 아닙니다.'], warnings: [] };
+      if (d.schemaVersion !== 1) E.push(`schemaVersion은 1이어야 합니다 (현재: ${JSON.stringify(d.schemaVersion)}).`);
+      const versionErrors = E.length;
+      ['meta', 'freight', 'tariffs', 'scenarios', 'policy'].forEach(k => { if (!isObj(d[k])) E.push(`"${k}" 객체가 없습니다.`); });
+      ['origins', 'destinations', 'materials'].forEach(k => { if (!Array.isArray(d[k])) E.push(`"${k}" 배열이 없습니다.`); });
+      if (E.length > versionErrors) return { errors: E, warnings: W };
+
+      // No markup anywhere — every string is rendered into the page. ('>' is fine: route keys use it.)
+      const tagged = [];
+      (function walk(v, path) {
+        if (isStr(v)) { if (v.includes('<')) tagged.push(path); }
+        else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+        else if (isObj(v)) Object.entries(v).forEach(([k, x]) => walk(x, path ? `${path}.${k}` : k));
+      })(d, '');
+      E.push(...cap(tagged, '문자열에 < 기호(HTML 태그)가 들어 있습니다'));
+
+      // Fixed structure: the dashboard compares exactly these origins, plants and materials.
+      Object.entries(STRUCTURE).forEach(([k, ids]) => {
+        const got = d[k].map(x => x && x.id);
+        const same = got.length === ids.length && ids.every(id => got.includes(id));
+        if (!same) E.push(`${k}의 id는 ${ids.join(', ')} 이어야 합니다 (현재: ${got.join(', ')}). 국가·거점·품목 추가/삭제는 코드 수정이 필요합니다.`);
+      });
+      if (E.length > versionErrors + (tagged.length ? 1 : 0)) return { errors: E, warnings: W };
+
+      const badType = [];
+      d.origins.forEach(o => ['name', 'port', 'shortPort'].forEach(f => { if (!isStr(o[f])) badType.push(`origins[${o.id}].${f}`); }));
+      d.destinations.forEach(x => {
+        ['name', 'shortName', 'city', 'port', 'locode', 'distanceKm', 'portNote'].forEach(f => { if (!isStr(x[f])) badType.push(`destinations[${x.id}].${f}`); });
+        if (!isNum(x.inlandBoxUsd) || x.inlandBoxUsd < 0) badType.push(`destinations[${x.id}].inlandBoxUsd`);
+      });
+      const noFobSource = [];
+      d.materials.forEach(m => {
+        ['name', 'fullName', 'hsCode'].forEach(f => { if (!isStr(m[f])) badType.push(`materials[${m.id}].${f}`); });
+        if (m.category !== 'Steel' && m.category !== 'Resin') badType.push(`materials[${m.id}].category (Steel|Resin)`);
+        if (!isNum(m.defaultTonsPerBox) || m.defaultTonsPerBox < 5 || m.defaultTonsPerBox > 30) badType.push(`materials[${m.id}].defaultTonsPerBox (5~30)`);
+        if (!isObj(m.defaultFob)) { badType.push(`materials[${m.id}].defaultFob`); return; }
+        let any = false;
+        STRUCTURE.origins.forEach(o => {
+          const v = m.defaultFob[o];
+          if (v === null) return;
+          if (!isNum(v) || v <= 0) badType.push(`materials[${m.id}].defaultFob.${o} (숫자 또는 null)`);
+          else any = true;
         });
+        if (!any) badType.push(`materials[${m.id}].defaultFob (최소 1개국은 숫자)`);
+        if (!String(m.fobSource || '').trim()) noFobSource.push(m.id);
+      });
+
+      // Freight: every origin × plant exactly once.
+      const f = d.freight;
+      const routes = Array.isArray(f.routes) ? f.routes : [];
+      if (!Array.isArray(f.routes)) badType.push('freight.routes (배열)');
+      const seenR = {};
+      routes.forEach(r => {
+        const k = routeKey(r);
+        seenR[k] = (seenR[k] || 0) + 1;
+        FREIGHT_SOURCES.forEach(s => { if (!isNum(r[s]) || r[s] < 0 || r[s] > 100000) badType.push(`freight.routes[${k}].${s}`); });
+      });
+      const missR = [], dupR = [];
+      STRUCTURE.origins.forEach(o => STRUCTURE.destinations.forEach(x => {
+        const n = seenR[`${o}>${x}`] || 0;
+        if (n === 0) missR.push(`${o}>${x}`); else if (n > 1) dupR.push(`${o}>${x}`);
+      }));
+      E.push(...cap(missR, '운임 구간 누락'), ...cap(dupR, '운임 구간 중복'));
+      if (!isObj(f.sources) || !FREIGHT_SOURCES.every(s => isObj(f.sources[s]) && isStr(f.sources[s].name))) badType.push('freight.sources.{drewry,freightos,cogoport}.name');
+
+      // Tariffs: every material × origin × plant exactly once, percentages as 25.75 (not 0.2575).
+      const t = d.tariffs;
+      const rows = Array.isArray(t.rows) ? t.rows : [];
+      if (!Array.isArray(t.rows)) badType.push('tariffs.rows (배열)');
+      const seenT = {}, ftaAbove = [], noUrl = [], badUrl = [];
+      let maxPct = 0;
+      rows.forEach(r => {
+        const k = rowKey(r);
+        seenT[k] = (seenT[k] || 0) + 1;
+        ['mfn', 'fta', 'adCvd'].forEach(p => {
+          if (!isNum(r[p]) || r[p] < 0 || r[p] > 500) badType.push(`tariffs.rows[${k}].${p}`);
+          else maxPct = Math.max(maxPct, r[p]);
+        });
+        ['ftaName', 'note'].forEach(p => { if (!isStr(r[p])) badType.push(`tariffs.rows[${k}].${p}`); });
+        if (isNum(r.fta) && isNum(r.mfn) && r.fta > r.mfn) ftaAbove.push(k);
+        if (!String(r.sourceUrl || '').trim()) noUrl.push(k);
+        else if (!isHttp(r.sourceUrl)) badUrl.push(k);
+      });
+      const missT = [], dupT = [];
+      STRUCTURE.materials.forEach(m => STRUCTURE.origins.forEach(o => STRUCTURE.destinations.forEach(x => {
+        const n = seenT[`${m}/${o}>${x}`] || 0;
+        if (n === 0) missT.push(`${m}/${o}>${x}`); else if (n > 1) dupT.push(`${m}/${o}>${x}`);
+      })));
+      E.push(...cap(missT, '관세 구간 누락'), ...cap(dupT, '관세 구간 중복'));
+      if (rows.length && maxPct > 0 && maxPct <= 1) E.push('관세율이 모두 1 이하입니다. 퍼센트를 소수(0.05)로 넣은 것 같습니다 — 5처럼 % 숫자로 넣어야 합니다.');
+
+      // Scenario + policy
+      const sc = d.scenarios.krChinaSteelAd;
+      if (!isObj(sc)) badType.push('scenarios.krChinaSteelAd');
+      else {
+        if (!isStr(sc.label)) badType.push('scenarios.krChinaSteelAd.label');
+        if (!Array.isArray(sc.materials) || !sc.materials.every(m => STRUCTURE.materials.includes(m))) badType.push('scenarios.krChinaSteelAd.materials');
+        if (!STRUCTURE.origins.includes(sc.orig) || !STRUCTURE.destinations.includes(sc.dest)) badType.push('scenarios.krChinaSteelAd.orig/dest');
+        if (!isNum(sc.default)) badType.push('scenarios.krChinaSteelAd.default');
+        if (!Array.isArray(sc.options) || !sc.options.length || !sc.options.every(o => isNum(o.value) && isStr(o.label))) badType.push('scenarios.krChinaSteelAd.options');
+        else if (isNum(sc.default) && !sc.options.some(o => o.value === sc.default)) W.push(`시나리오 기본값 ${sc.default}%가 선택지(options)에 없습니다.`);
+        if (Array.isArray(sc.materials) && isNum(sc.default)) {
+          const off = sc.materials.filter(m => { const r = rows.find(x => x.mat === m && x.orig === sc.orig && x.dest === sc.dest); return r && r.adCvd !== sc.default; });
+          if (off.length) W.push(`시나리오 기본값(${sc.default}%)과 관세표 ${off.join('·')} ${sc.orig}→${sc.dest} AD 값이 다릅니다. 화면은 시나리오 기본값을 씁니다.`);
+        }
+      }
+      const p = d.policy;
+      if (!isNum(p.manausZfmBaseDutyMultiplier) || p.manausZfmBaseDutyMultiplier < 0 || p.manausZfmBaseDutyMultiplier > 1) badType.push('policy.manausZfmBaseDutyMultiplier (0~1)');
+      if (!Array.isArray(p.thailandAdExemptMaterials) || !p.thailandAdExemptMaterials.every(m => STRUCTURE.materials.includes(m))) badType.push('policy.thailandAdExemptMaterials');
+      if (d.changeLog !== undefined && !Array.isArray(d.changeLog)) badType.push('changeLog (배열)');
+
+      const m = d.meta;
+      ['title', 'edition', 'asOf'].forEach(k => { if (!isStr(m[k])) badType.push(`meta.${k}`); });
+      if (!Array.isArray(m.sources)) badType.push('meta.sources (배열)');
+
+      E.push(...cap(badType, '형식 오류 (숫자는 따옴표 없이, 문자열은 따옴표로)', 10));
+
+      // Warnings — sourcing hygiene
+      W.push(...cap(noUrl, `관세 행 출처 URL 미기재 ${noUrl.length}/${rows.length}건`, 3));
+      W.push(...cap(badUrl, '관세 행 sourceUrl이 http(s) 주소가 아님'));
+      W.push(...cap(ftaAbove, 'FTA 세율이 MFN보다 높음 (FTA 미적용으로 처리됨)'));
+      W.push(...cap(noFobSource, 'FOB 단가 출처(fobSource) 미기재'));
+      if (isObj(f.sources)) {
+        const noFreightUrl = FREIGHT_SOURCES.filter(s => isObj(f.sources[s]) && !isHttp(f.sources[s].url));
+        W.push(...cap(noFreightUrl, '운임 지수 출처 URL 미기재'));
+      }
+      if (!String(f.asOf || '').trim()) W.push('freight.asOf(운임 기준일) 미기재');
+      if (!String(t.asOf || '').trim()) W.push('tariffs.asOf(관세 기준일) 미기재');
+      return { errors: E, warnings: W };
+    }
+
+    // Apply a full or partial JSON on top of the current data. Rows are matched by key, never appended.
+    function mergeData(base, patch) {
+      const out = clone(base);
+      const errors = [], notes = [];
+      if (!isObj(patch)) return { data: out, errors: ['최상위 값이 JSON 객체({ ... })가 아닙니다.'], notes };
+      Object.keys(patch).forEach(k => { if (!DATA_KEYS.includes(k)) notes.push(`알 수 없는 키 "${k}"는 무시했습니다.`); });
+
+      if ('schemaVersion' in patch) out.schemaVersion = patch.schemaVersion;
+      if ('meta' in patch) {
+        if (isObj(patch.meta)) Object.assign(out.meta, patch.meta); else errors.push('"meta"는 객체여야 합니다.');
+      }
+      ['origins', 'destinations', 'materials'].forEach(k => {
+        if (!(k in patch)) return;
+        if (!Array.isArray(patch[k])) { errors.push(`"${k}"는 배열이어야 합니다.`); return; }
+        patch[k].forEach(item => {
+          const target = isObj(item) && out[k].find(x => x.id === item.id);
+          if (!target) { errors.push(`${k}에 없는 id "${isObj(item) ? item.id : item}" — 항목 추가는 지원하지 않습니다.`); return; }
+          const { defaultFob, ...rest } = item;
+          Object.assign(target, rest);
+          if (k === 'materials' && isObj(defaultFob)) Object.assign(target.defaultFob, defaultFob);
+        });
+      });
+      const mergeRows = (list, into, keyFn, label) => {
+        if (!Array.isArray(list)) { errors.push(`${label}는 배열이어야 합니다.`); return; }
+        const index = new Map(into.map(r => [keyFn(r), r]));
+        list.forEach(r => {
+          const target = isObj(r) && index.get(keyFn(r));
+          if (!target) errors.push(`${label}에 없는 구간 "${isObj(r) ? keyFn(r) : r}" — 키(mat/orig/dest)를 확인하세요.`);
+          else Object.assign(target, r);
+        });
+      };
+      if ('freight' in patch) {
+        const pf = patch.freight;
+        if (!isObj(pf)) errors.push('"freight"는 객체여야 합니다.');
+        else Object.entries(pf).forEach(([k, v]) => {
+          if (k === 'routes') mergeRows(v, out.freight.routes, routeKey, 'freight.routes');
+          else if (k === 'sources' && isObj(v)) Object.entries(v).forEach(([s, sv]) => { out.freight.sources[s] = { ...(out.freight.sources[s] || {}), ...sv }; });
+          else out.freight[k] = v;
+        });
+      }
+      if ('tariffs' in patch) {
+        const pt = patch.tariffs;
+        if (!isObj(pt)) errors.push('"tariffs"는 객체여야 합니다.');
+        else Object.entries(pt).forEach(([k, v]) => {
+          if (k === 'rows') mergeRows(v, out.tariffs.rows, rowKey, 'tariffs.rows');
+          else out.tariffs[k] = v;
+        });
+        const pcts = (Array.isArray(pt && pt.rows) ? pt.rows : []).flatMap(r => ['mfn', 'fta', 'adCvd'].map(f => r && r[f]).filter(isNum));
+        if (pcts.length && Math.max(...pcts) > 0 && Math.max(...pcts) <= 1) {
+          errors.push('붙여넣은 관세율이 모두 1 이하입니다. 퍼센트를 소수(0.2575)로 넣은 것 같습니다 — 25.75처럼 % 숫자로 넣어야 합니다.');
+        }
+      }
+      if ('scenarios' in patch) {
+        if (!isObj(patch.scenarios)) errors.push('"scenarios"는 객체여야 합니다.');
+        else Object.entries(patch.scenarios).forEach(([k, v]) => { out.scenarios[k] = { ...(out.scenarios[k] || {}), ...v }; });
+      }
+      if ('policy' in patch) {
+        if (isObj(patch.policy)) Object.assign(out.policy, patch.policy); else errors.push('"policy"는 객체여야 합니다.');
+      }
+      if ('changeLog' in patch) {
+        if (Array.isArray(patch.changeLog)) {
+          // Append only entries we do not already have, so re-importing a full export does not duplicate history.
+          const seen = new Set((out.changeLog || []).map(e => JSON.stringify(e)));
+          out.changeLog = (out.changeLog || []).concat(patch.changeLog.filter(e => !seen.has(JSON.stringify(e))));
+        }
+        else errors.push('"changeLog"는 배열이어야 합니다.');
+      }
+      return { data: out, errors, notes };
+    }
+
+    function diffSummary(a, b) {
+      const changed = (xs, ys, keyFn) => {
+        const m = new Map(xs.map(x => [keyFn(x), JSON.stringify(x)]));
+        return ys.filter(y => m.get(keyFn(y)) !== JSON.stringify(y)).length;
+      };
+      return {
+        routes: changed(a.freight.routes, b.freight.routes, routeKey),
+        tariffRows: changed(a.tariffs.rows, b.tariffs.rows, rowKey),
+        materials: changed(a.materials, b.materials, x => x.id),
+        destinations: changed(a.destinations, b.destinations, x => x.id) + changed(a.origins, b.origins, x => x.id),
+        other: ['meta', 'scenarios', 'policy'].filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k])),
+        logs: (b.changeLog || []).length - (a.changeLog || []).length
+      };
+    }
+
+    // Same layout as the embedded block: objects expanded, arrays of objects one item per line.
+    function serializeData(d) {
+      const compact = (v) => JSON.stringify(v).replace(/</g, '\\u003c');
+      const fmtv = (v, ind) => {
+        if (Array.isArray(v)) {
+          if (v.length && v.every(isObj)) return '[\n' + v.map(i => ind + '  ' + compact(i)).join(',\n') + '\n' + ind + ']';
+          return compact(v);
+        }
+        if (isObj(v)) {
+          const keys = Object.keys(v);
+          if (!keys.length) return '{}';
+          return '{\n' + keys.map(k => ind + '  ' + compact(k) + ': ' + fmtv(v[k], ind + '  ')).join(',\n') + '\n' + ind + '}';
+        }
+        return compact(v);
+      };
+      return fmtv(d, '');
+    }
+
+    function applyData(d) {
+      DATA = d;
+      ORIGINS = d.origins;
+      DESTINATIONS = d.destinations;
+      MATERIALS = d.materials;
+      SCENARIO = d.scenarios.krChinaSteelAd;
+      POLICY = d.policy;
+      INITIAL_FREIGHT_BOX = {};
+      d.freight.routes.forEach(r => {
+        (INITIAL_FREIGHT_BOX[r.orig] = INITIAL_FREIGHT_BOX[r.orig] || {})[r.dest] = { drewry: r.drewry, freightos: r.freightos, cogoport: r.cogoport };
+      });
+    }
+
+    // tariffs[mat][orig][dest], with the scenario AD rate applied on its target rows.
+    function buildTariffMatrix(scenarioAdRate) {
+      const db = {};
+      DATA.tariffs.rows.forEach(r => {
+        const slot = ((db[r.mat] = db[r.mat] || {})[r.orig] = db[r.mat][r.orig] || {});
+        slot[r.dest] = {
+          mfn: r.mfn, fta: r.fta, hasFta: r.fta < r.mfn, ftaName: r.ftaName,
+          adCvd: r.adCvd, note: r.note, sourceUrl: r.sourceUrl || ''
+        };
+      });
+      SCENARIO.materials.forEach(m => {
+        const t = db[m] && db[m][SCENARIO.orig] && db[m][SCENARIO.orig][SCENARIO.dest];
+        if (t) t.adCvd = Number(scenarioAdRate);
       });
       return db;
     }
 
+    const thAdExempt = (matId) => POLICY.thailandAdExemptMaterials.includes(matId);
+    const zfmReductionPct = () => Math.round((1 - POLICY.manausZfmBaseDutyMultiplier) * 100);
+
+    // Load the embedded block; stop with a readable message if it is broken.
+    function loadEmbeddedData() {
+      let parsed, problem = null;
+      try { parsed = JSON.parse(document.getElementById('dashboard-data').textContent); }
+      catch (err) { problem = [`데이터 블록 JSON 문법 오류: ${err.message}`]; }
+      if (!problem) {
+        const v = validateData(parsed);
+        if (v.errors.length) problem = v.errors;
+      }
+      if (problem) {
+        const box = document.getElementById('dataAlert');
+        box.classList.remove('hidden');
+        box.innerHTML = '<p class="eyebrow is-accent">Data Error</p><h3>데이터 블록을 읽을 수 없어 대시보드를 그리지 않았습니다.</h3><ul>'
+          + problem.map(p => `<li>${String(p).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</li>`).join('')
+          + '</ul><p>HTML 안의 &lt;script id="dashboard-data"&gt; 구간을 마지막으로 정상 동작한 버전으로 되돌리거나, 위 항목을 고쳐 주세요.</p>';
+        return false;
+      }
+      applyData(parsed);
+      return true;
+    }
+    if (!loadEmbeddedData()) return;
+
+
     // =========================================================================
-    // 2. APPLICATION STATE & CALCULATION ENGINE (Supports "없음" / Unavailable Origins!)
+    // 2. APPLICATION STATE & CALCULATION ENGINE
     // =========================================================================
     let state = {
       selectedMaterialId: 'GI',
@@ -1190,7 +1790,7 @@
       selectedDetailOrigin: 'CN',
       selectedDetailDest: 'KR',
       fobPrices: {},
-      originAvailable: {}, // { matId: { KR: true, CN: true, TH: true, IN: true, US: true } }
+      originAvailable: {}, // { matId: { KR: true, ... } } — false when defaultFob is null ("없음")
       tonsPerContainer: {},
       freightBox: {},
       customFreightMt: {},
@@ -1203,13 +1803,13 @@
       state.tonsPerContainer = {};
       MATERIALS.forEach(m => {
         state.fobPrices[m.id] = { ...m.defaultFob };
-        state.originAvailable[m.id] = { KR: true, CN: true, TH: true, IN: true, US: true };
+        state.originAvailable[m.id] = Object.fromEntries(ORIGINS.map(o => [o.id, m.defaultFob[o.id] !== null && m.defaultFob[o.id] !== undefined]));
         state.tonsPerContainer[m.id] = m.defaultTonsPerBox;
       });
       state.freightBox = JSON.parse(JSON.stringify(INITIAL_FREIGHT_BOX));
       state.customFreightMt = {};
-      state.krChinaSteelAdPct = 25.75;
-      state.tariffs = buildInitialTariffMatrix(state.krChinaSteelAdPct);
+      state.krChinaSteelAdPct = SCENARIO.default;
+      state.tariffs = buildTariffMatrix(state.krChinaSteelAdPct);
       state.insuranceRatePct = 0.20;
       state.freightMultiplierPct = 100;
       state.applyManausZfm = false;
@@ -1256,7 +1856,7 @@
       let expNonBondedExtra = rawExtraDuty;
       if (!isDomestic) {
         if (destId === 'KR') expNonBondedExtra = 0.0; // 한국 관세환급특례법 개별환급 가능
-        if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM')) expNonBondedExtra = 0.0;
+        if (destId === 'TH' && state.bondedExemptions.TH && thAdExempt(matId)) expNonBondedExtra = 0.0;
       }
       const rateExpNonBonded = isDomestic ? 0.0 : expNonBondedExtra;
 
@@ -1264,8 +1864,8 @@
       let domBondedBase = rawBaseDuty;
       let domBondedExtra = rawExtraDuty;
       if (!isDomestic) {
-        if (destId === 'BR') domBondedBase = Number((rawBaseDuty * 0.12).toFixed(2));
-        if (destId === 'TH' && (matId === 'GI' || matId === 'PCM')) domBondedExtra = 0.0;
+        if (destId === 'BR') domBondedBase = Number((rawBaseDuty * POLICY.manausZfmBaseDutyMultiplier).toFixed(2));
+        if (destId === 'TH' && thAdExempt(matId)) domBondedExtra = 0.0;
       }
       const rateDomBonded = isDomestic ? 0.0 : Number((domBondedBase + domBondedExtra).toFixed(2));
 
@@ -1273,8 +1873,8 @@
       let domNonBondedBase = rawBaseDuty;
       let domNonBondedExtra = rawExtraDuty;
       if (!isDomestic) {
-        if (destId === 'BR' && state.applyManausZfm) domNonBondedBase = Number((rawBaseDuty * 0.12).toFixed(2));
-        if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM')) domNonBondedExtra = 0.0;
+        if (destId === 'BR' && state.applyManausZfm) domNonBondedBase = Number((rawBaseDuty * POLICY.manausZfmBaseDutyMultiplier).toFixed(2));
+        if (destId === 'TH' && state.bondedExemptions.TH && thAdExempt(matId)) domNonBondedExtra = 0.0;
       }
       const rateDomNonBonded = isDomestic ? 0.0 : Number((domNonBondedBase + domNonBondedExtra).toFixed(2));
       const expBondedAllowed = true;
@@ -1312,9 +1912,9 @@
         baseDutyPct = domBondedBase;
         extraDutyPct = domBondedExtra;
         if (destId === 'BR' && state.applyManausZfm) {
-          effectiveFtaName = `내수·보세 (마나우스ZFM 기본세88%감면${domBondedExtra > 0 ? '·AD부과' : ''})`;
-          effectiveNote = `[내수 + 보세] 마나우스 자유무역지대(ZFM) 내수 판매 시 기본관세 88% 감면(${rawBaseDuty}%→${domBondedBase}%), 단 반덤핑(AD +${domBondedExtra}%)은 내수 반출 시 100% 부과`;
-        } else if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM') && rawExtraDuty > 0) {
+          effectiveFtaName = `내수·보세 (마나우스ZFM 기본세${zfmReductionPct()}%감면${domBondedExtra > 0 ? '·AD부과' : ''})`;
+          effectiveNote = `[내수 + 보세] 마나우스 자유무역지대(ZFM) 내수 판매 시 기본관세 ${zfmReductionPct()}% 감면(${rawBaseDuty}%→${domBondedBase}%), 단 반덤핑(AD +${domBondedExtra}%)은 내수 반출 시 100% 부과`;
+        } else if (destId === 'TH' && state.bondedExemptions.TH && thAdExempt(matId) && rawExtraDuty > 0) {
           effectiveFtaName = '내수·보세 (태국 DFT 가전용 AD면제)';
           effectiveNote = `[내수 + 보세] 태국 내수 판매분이라도 DFT 전기·전자(가전) 제조용 직권 예외 및 FTA 적용 시 관세·AD 0%`;
         } else {
@@ -1410,9 +2010,9 @@
     }
 
     // =========================================================================
-    // CSV EXPORT (unchanged)
+    // CSV EXPORT
     // =========================================================================
-    function downloadCsvRows(filename, rows) {
+        function downloadCsvRows(filename, rows) {
       const csvContent = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -1439,13 +2039,13 @@
     }
 
     function exportTariffRawDataCsv() {
-      const rows = [['품목코드', '원재료명', 'HS_Code', '출발지', '도착거점', '기준항(POD)', 'MFN(%)', 'FTA(%)', '적용협정', 'AD_CVD_232_301(%)', '실효관세율(%)', '근거']];
+      const rows = [['품목코드', '원재료명', 'HS_Code', '출발지', '도착거점', '기준항(POD)', 'MFN(%)', 'FTA(%)', '적용협정', 'AD_CVD_232_301(%)', '실효관세율(%)', '근거', '출처URL']];
       MATERIALS.forEach(mat => {
         ORIGINS.forEach(o => {
           DESTINATIONS.forEach(d => {
             const t = state.tariffs[mat.id][o.id][d.id];
             const base = t.hasFta ? Number(t.fta) : Number(t.mfn);
-            rows.push([mat.id, mat.fullName, mat.hsCode, o.name, d.name, d.port, t.mfn, t.fta, t.ftaName, t.adCvd, (base + Number(t.adCvd)).toFixed(2), t.note]);
+            rows.push([mat.id, mat.fullName, mat.hsCode, o.name, d.name, d.port, t.mfn, t.fta, t.ftaName, t.adCvd, (base + Number(t.adCvd)).toFixed(2), t.note, t.sourceUrl]);
           });
         });
       });
@@ -1465,6 +2065,11 @@
     const isTouch = window.matchMedia('(hover: none)').matches;
 
     const originOf = (id) => ORIGINS.find(o => o.id === id);
+    const adj = (id) => ORIGIN_ADJ[id] || `${originOf(id).name}산`;
+    const srcLink = (url, text) => (isHttp(url)
+      ? `<a class="src-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`
+      : escapeHtml(text));
+    const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
     const destOf = (id) => DESTINATIONS.find(d => d.id === id);
     const matLabel = (m) => (m.id === 'CPP' ? '복합PP' : m.id);
     const matKo = (m) => {
@@ -1580,7 +2185,7 @@
         ${gridHtml}
         <div class="tt-total"><span>통관 도착가 (Landed)</span><strong class="num">${fmt(c.landedCost, 1)}</strong></div>
         <div class="tt-door"><span>공장 입고가 · 내륙 +${fmt(c.inlandMt, 1)}</span><span>${fmt(c.doorCost, 1)}</span></div>
-        <p class="tt-note"><b>근거</b>${escapeHtml(state.tariffs[mat.id][origId][destId].note)}</p>
+        <p class="tt-note"><b>근거</b>${escapeHtml(state.tariffs[mat.id][origId][destId].note)}${hostOf(state.tariffs[mat.id][origId][destId].sourceUrl) ? ` <span style="color:var(--mute)">· 출처 ${escapeHtml(hostOf(state.tariffs[mat.id][origId][destId].sourceUrl))}</span>` : ''}</p>
         ${state.salesType === 'domestic' && state.plantZoneType === 'nonbonded' ? '' : `<p class="tt-note" style="border-top:0;padding-top:0;margin-top:6px"><b>조건</b>${escapeHtml(c.note)}</p>`}`, e);
     }
 
@@ -1675,7 +2280,7 @@
         `${state.salesType === 'export' ? '수출' : '내수'} · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}`,
         state.applyFta ? 'FTA 우선' : 'FTA 미적용',
         state.applyAdCvd ? '무역구제 반영' : '무역구제 제외',
-        mat.category === 'Steel' ? `한국 대중국 철강 AD ${state.krChinaSteelAdPct}%` : null,
+        SCENARIO.materials.includes(mat.id) ? `${escapeHtml(SCENARIO.label)} ${state.krChinaSteelAdPct}%` : null,
         state.applyManausZfm ? '마나우스 ZFM 감면' : null,
         state.bondedExemptions.TH ? '태국 가전용 AD 면제' : null,
         state.includeDomestic ? null : '내수 조달 제외',
@@ -1699,12 +2304,12 @@
           <div class="fob-row ${isAvail ? '' : 'is-off'}">
             <span class="code">${o.id}</span>
             <span class="name">${o.name}</span>
-            <div class="seg seg-sm" role="group" aria-label="${o.name} 생산 여부">
+            <div class="seg seg-sm" role="group" aria-label="${escapeHtml(o.name)} 생산 여부">
               <button type="button" data-avail="${o.id}" data-v="on" class="${isAvail ? 'is-on' : ''}">입력</button>
               <button type="button" data-avail="${o.id}" data-v="off" class="${isAvail ? '' : 'is-on'}">없음</button>
             </div>
             ${isAvail
-              ? `<label class="money"><span>$</span><input type="number" step="5" min="1" class="fob-input num" data-orig="${o.id}" value="${fobs[o.id]}" aria-label="${o.name} FOB 단가" /></label>`
+              ? `<label class="money"><span>$</span><input type="number" step="5" min="1" class="fob-input num" data-orig="${o.id}" value="${fobs[o.id] ?? ''}" aria-label="${escapeHtml(o.name)} FOB 단가" /></label>`
               : `<span class="money is-off">—</span>`}
           </div>`;
       }).join('');
@@ -1721,8 +2326,15 @@
             return;
           }
           state.originAvailable[matId][oId] = turnOn;
+          let tempNote = '';
+          if (turnOn && !(Number(state.fobPrices[matId][oId]) > 0)) {
+            // No market price in the data for this origin: start from the average of the others, flagged as temporary.
+            const others = ORIGINS.filter(o => o.id !== oId && state.originAvailable[matId][o.id] !== false).map(o => Number(state.fobPrices[matId][o.id])).filter(v => v > 0);
+            state.fobPrices[matId][oId] = Math.round(others.reduce((a, b) => a + b, 0) / Math.max(1, others.length));
+            tempNote = ` 데이터에 단가가 없어 다른 생산국 평균 $${state.fobPrices[matId][oId]}을 임시로 넣었습니다 — 실제 단가로 바꾸세요.`;
+          }
           renderAll();
-          showToast(`${matLabel(getActiveMaterial())} — ${originOf(oId).name} 생산지를 ${turnOn ? '다시 비교에 넣었습니다' : "'없음'으로 뺐습니다"}.`);
+          showToast(`${matLabel(getActiveMaterial())} — ${originOf(oId).name} 생산지를 ${turnOn ? '다시 비교에 넣었습니다' : "'없음'으로 뺐습니다"}.${tempNote}`);
         });
       });
 
@@ -1760,7 +2372,7 @@
 
       // ---- aggregate -------------------------------------------------------
       let sumBest = 0, sumSavings = 0, validDestCount = 0;
-      const winCounts = { KR: 0, CN: 0, TH: 0, IN: 0, US: 0 };
+      const winCounts = Object.fromEntries(ORIGINS.map(o => [o.id, 0]));
       let widest = null;
       DESTINATIONS.forEach(d => {
         const ranked = destRankings[d.id];
@@ -1783,13 +2395,13 @@
       // ---- cover story -----------------------------------------------------
       let headline;
       if (!topId) headline = '비교 가능한 생산지가 없습니다.';
-      else if (topCount === validDestCount) headline = `${validDestCount}개 거점 모두,<br>답은 <span class="hl">${ORIGIN_ADJ[topId]}</span>.`;
-      else headline = `${validDestCount}개 거점 중 ${topCount}곳,<br>답은 <span class="hl">${ORIGIN_ADJ[topId]}</span>.`;
+      else if (topCount === validDestCount) headline = `${validDestCount}개 거점 모두,<br>답은 <span class="hl">${adj(topId)}</span>.`;
+      else headline = `${validDestCount}개 거점 중 ${topCount}곳,<br>답은 <span class="hl">${adj(topId)}</span>.`;
       $('coverHeadline').innerHTML = headline;
 
       $('coverDeck').textContent = topId
         ? `${basis} 기준으로 거점마다 가장 싼 소싱처를 고르면 톤당 평균 ${fmt(avgBest)}. 2순위를 택했을 때보다 평균 ${fmt(avgSavings)}를 덜 낸다.`
-          + (runner ? ` ${ORIGIN_ADJ[runner[0]]}이 ${runner[1]}곳으로 뒤를 잇는다.` : '')
+          + (runner ? ` ${adj(runner[0])}이 ${runner[1]}곳으로 뒤를 잇는다.` : '')
         : '';
 
       $('kpiAvgBestPrice').innerHTML = validDestCount ? `<span class="cur">$</span>${Math.round(avgBest).toLocaleString('en-US')}` : '—';
@@ -1804,10 +2416,10 @@
       if (krBest) {
         const krSecond = krRanked[1];
         $('figKorea').innerHTML = `${fmt(krBest.displayPrice)}<small>${originOf(krBest.origId).name}</small>`;
-        const cnKr = cells['CN']['KR'];
+        const cnKr = cells[SCENARIO.orig] && cells[SCENARIO.orig]['KR'];
         let sub = krSecond ? `2위 ${originOf(krSecond.origId).name} 대비 <b>−${fmt(krSecond.displayPrice - krBest.displayPrice)}</b>` : '단독 소싱';
-        if (mat.category === 'Steel' && cnKr.isAvailable && krBest.origId !== 'CN') {
-          sub += ` · 중국산은 AD ${state.krChinaSteelAdPct}% 반영 시 ${fmt(cnKr.displayPrice)}`;
+        if (SCENARIO.dest === 'KR' && SCENARIO.materials.includes(mat.id) && cnKr && cnKr.isAvailable && krBest.origId !== SCENARIO.orig) {
+          sub += ` · ${adj(SCENARIO.orig)}은 AD ${state.krChinaSteelAdPct}% 반영 시 ${fmt(cnKr.displayPrice)}`;
         }
         $('figKoreaSub').innerHTML = sub;
       } else {
@@ -1977,14 +2589,14 @@
       const pct = (v) => Math.round((v / sum) * 100);
       box.innerHTML = `
         <p class="eyebrow">Reading — ${d.name}</p>
-        <p class="reading-lead">${d.shortName}의 1순위는 <span class="hl">${ORIGIN_ADJ[o.id]}</span>, 톤당 ${fmt(best.displayPrice)}.</p>
+        <p class="reading-lead">${d.shortName}의 1순위는 <span class="hl">${adj(o.id)}</span>, 톤당 ${fmt(best.displayPrice)}.</p>
         <dl class="ledger">
           <div><dt><i class="swatch" style="background:${COLORS.ink}"></i>FOB</dt><dd>${fmt(best.fob)} · ${pct(best.fob)}%</dd></div>
           <div><dt><i class="swatch" style="background:${COLORS.taupe}"></i>${state.priceBasis === 'door' ? '운임·보험·내륙' : '운임·보험'}</dt><dd>${fmt(frt)} · ${pct(frt)}%</dd></div>
           <div><dt><i class="swatch" style="background:${COLORS.accent}"></i>관세 ${best.totalDutyPct.toFixed(1)}%</dt><dd>${fmt(best.tariffAmount)} · ${pct(best.tariffAmount)}%</dd></div>
         </dl>
         <p class="reading-foot">${ranked.length > 1
-          ? `가장 비싼 선택지는 ${ORIGIN_ADJ[worst.origId]} ${fmt(worst.displayPrice)} — 1순위보다 톤당 ${fmt(worst.displayPrice - best.displayPrice)} 높다.`
+          ? `가장 비싼 선택지는 ${adj(worst.origId)} ${fmt(worst.displayPrice)} — 1순위보다 톤당 ${fmt(worst.displayPrice - best.displayPrice)} 높다.`
           : '이 거점은 비교 대상이 하나뿐입니다.'} POD ${escapeHtml(d.port)} (${escapeHtml(d.locode)}).</p>`;
     }
 
@@ -2046,7 +2658,7 @@
           <td class="r num ${srcOn('freightos') ? '' : 'is-off'}">${fmt(c.freightosBox)}</td>
           <td class="r num ${srcOn('cogoport') ? '' : 'is-off'}">${fmt(c.cogoportBox)}</td>
           <td class="r num strong">${fmt(c.avgBoxFreight)}</td>
-          <td class="r"><input type="number" step="1" min="0" data-key="${key}" value="${c.freightMt.toFixed(1)}" class="inline-input num freight-mt-input" title="${isCustom ? '사용자 지정값' : '지수 평균 ÷ 적재중량'}" style="${isCustom ? 'color:var(--accent)' : ''}" aria-label="${o.name}→${d.shortName} 톤당 해운비" /></td>
+          <td class="r"><input type="number" step="1" min="0" data-key="${key}" value="${c.freightMt.toFixed(1)}" class="inline-input num freight-mt-input" title="${isCustom ? '사용자 지정값' : '지수 평균 ÷ 적재중량'}" style="${isCustom ? 'color:var(--accent)' : ''}" aria-label="${escapeHtml(o.name)}→${escapeHtml(d.shortName)} 톤당 해운비" /></td>
           <td class="r num muted">${c.isDomestic ? '—' : '+' + fmt(c.inlandMt, 1)}</td>
         </tr>`;
       }).join('')).join('');
@@ -2066,6 +2678,8 @@
     function renderTariffTab() {
       const mat = getActiveMaterial();
       const { cells } = computeMaterialMatrix(mat.id);
+      const matRows = DATA.tariffs.rows.filter(r => r.mat === mat.id);
+      $('tariffSourceCount').textContent = `출처 URL ${matRows.filter(r => isHttp(r.sourceUrl)).length}/${matRows.length} (${matLabel(mat)}) · 기준 ${DATA.tariffs.asOf || '미기재'}`;
       $('tariffDetailTableBody').innerHTML = ORIGINS.map(o => DESTINATIONS.map((d, i) => {
         const c = cells[o.id][d.id];
         const raw = state.tariffs[mat.id][o.id][d.id]; // agreement + legal basis as stored, independent of the sales/plant mode
@@ -2077,19 +2691,76 @@
           <td class="muted">${escapeHtml(raw.ftaName)}</td>
           <td class="r num ${c.adCvdPct > 0 ? 'acc' : 'muted'}">${c.adCvdPct > 0 ? '+' + c.adCvdPct : '0'}</td>
           <td class="r num ${c.totalDutyPct > 15 ? 'acc' : 'strong'}">${c.totalDutyPct.toFixed(2)}</td>
-          <td class="note">${escapeHtml(raw.note)}</td>
+          <td class="note">${escapeHtml(raw.note)} ${isHttp(raw.sourceUrl) ? srcLink(raw.sourceUrl, '원문 ↗') : '<span class="no-src">출처 URL 없음</span>'}</td>
         </tr>`;
       }).join('')).join('');
     }
 
-    function populateDestDropdown() {
+    // Text that used to be hard-coded in the markup now comes from DATA.
+    function renderMeta() {
+      const m = DATA.meta;
+      $('metaEdition').textContent = m.edition;
+      $('metaTitle').textContent = m.title;
+      document.title = `Sourcing — ${m.title}`;
+      $('metaCounts').textContent = `생산국 ${ORIGINS.length}개 × 법인 거점 ${DESTINATIONS.length}개 × 원재료 ${MATERIALS.length}종 · 기준 ${m.asOf} · 단위 USD/MT`;
+      $('metaSources').innerHTML = (m.sources || []).map(s => srcLink(s.url, s.name)).join(' · ') || '미기재';
+
+      const rows = DATA.tariffs.rows;
+      const withUrl = rows.filter(r => isHttp(r.sourceUrl)).length;
+      const logs = (DATA.changeLog || []).length;
+      $('metaStatus').textContent = `데이터 기준 ${m.asOf} · ${m.preparedBy || '작성자 미기재'} · 관세 출처 URL ${withUrl}/${rows.length} · 변경 기록 ${logs}건. 모든 수치는 이 파일의 데이터 블록(dashboard-data)에서 읽어 다시 계산합니다.`;
+
+      const fs = DATA.freight.sources;
+      $('freightSourcesNote').innerHTML = FREIGHT_SOURCES.map(k => srcLink(fs[k].url, fs[k].name)).join(' · ') + ` 평균 · 기준 ${escapeHtml(DATA.freight.asOf || '미기재')}`;
+      $('tonsHint').textContent = `MT/Box · 현재 품목 기준 (데이터 기본값: ${MATERIALS.map(x => `${matLabel(x)} ${x.defaultTonsPerBox}`).join(', ')})`;
+
+      $('zfmLabel').textContent = `브라질 마나우스 ZFM 기본관세 ${zfmReductionPct()}% 감면`;
+      $('scenarioLabel').textContent = SCENARIO.label;
+      const sel = $('selectKrChinaSteelAd');
+      sel.innerHTML = SCENARIO.options.map(o => `<option value="${o.value}">${escapeHtml(o.label)}</option>`).join('');
+      if (!SCENARIO.options.some(o => Number(o.value) === Number(state.krChinaSteelAdPct))) {
+        sel.insertAdjacentHTML('afterbegin', `<option value="${state.krChinaSteelAdPct}">${state.krChinaSteelAdPct}%</option>`);
+      }
+      sel.value = String(state.krChinaSteelAdPct);
+      const thRows = POLICY.thailandAdExemptMaterials.map(id => {
+        const cn = DATA.tariffs.rows.find(r => r.mat === id && r.orig === 'CN' && r.dest === 'TH');
+        return cn ? `${matLabel({ id })} ${cn.adCvd}%` : null;
+      }).filter(Boolean);
+      $('thExemptHint').textContent = `대상 ${POLICY.thailandAdExemptMaterials.join('·')}${thRows.length ? ` (중국산 AD ${thRows.join(' · ')} → 0%)` : ''}`;
+
+      renderDataPanel();
+    }
+
+    function renderDataPanel() {
+      const v = validateData(DATA);
+      const rows = DATA.tariffs.rows;
+      const fs = DATA.freight.sources;
+      $('dataAsOf').textContent = DATA.meta.asOf;
+      const line = (k, val) => `<div><dt>${k}</dt><dd>${val}</dd></div>`;
+      $('dataStatus').innerHTML = [
+        line('작성', escapeHtml(DATA.meta.preparedBy || '미기재')),
+        line('기준일 (운임 / 관세)', `${escapeHtml(DATA.freight.asOf || '—')} / ${escapeHtml(DATA.tariffs.asOf || '—')}`),
+        line('관세 출처 URL', `${rows.filter(r => isHttp(r.sourceUrl)).length} / ${rows.length}`),
+        line('운임 지수 출처 URL', `${FREIGHT_SOURCES.filter(k => isHttp(fs[k].url)).length} / ${FREIGHT_SOURCES.length}`),
+        line('FOB 출처 기재', `${MATERIALS.filter(x => String(x.fobSource || '').trim()).length} / ${MATERIALS.length}`),
+        line('변경 기록', `${(DATA.changeLog || []).length}건`),
+        line('검증 경고', `${v.warnings.length}건`)
+      ].join('');
+
+      const logs = (DATA.changeLog || []).slice(-40).reverse();
+      $('changeLogList').innerHTML = logs.length
+        ? `<ol>${logs.map(e => `<li>${escapeHtml(e.date || '')} <b>${escapeHtml(e.path || '')}</b> ${escapeHtml(JSON.stringify(e.old ?? ''))} → ${escapeHtml(JSON.stringify(e.new ?? ''))} ${isHttp(e.sourceUrl) ? srcLink(e.sourceUrl, '출처 ↗') : '<span class="no-src">출처 없음</span>'}${e.note ? ` <span style="color:var(--mute)">${escapeHtml(e.note)}</span>` : ''}</li>`).join('')}</ol>`
+        : '<p class="fine" style="margin-top:8px">아직 기록이 없습니다.</p>';
+    }
+
+    function fillDestDropdown() {
       const sel = $('selectChartDest');
-      sel.innerHTML = DESTINATIONS.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+      sel.innerHTML = DESTINATIONS.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
       sel.value = state.selectedDetailDest;
-      sel.addEventListener('change', (e) => selectDest(e.target.value));
     }
 
     function renderAll() {
+      renderMeta();
       renderPortMappingGuide();
       renderMaterialSelector();
       renderConditionLine();
@@ -2127,6 +2798,8 @@
     }
 
     function setupEventListeners() {
+      $('selectChartDest').addEventListener('change', (e) => selectDest(e.target.value));
+
       // ---- POD modal ---------------------------------------------------------
       const portModal = $('portGuideModal');
       $('btnOpenPortModal').addEventListener('click', () => portModal.classList.remove('hidden'));
@@ -2211,16 +2884,17 @@
       $('selectKrChinaSteelAd').addEventListener('change', (e) => {
         const rate = parseFloat(e.target.value) || 0;
         state.krChinaSteelAdPct = rate;
-        ['GI', 'PCM'].forEach(mId => {
-          if (state.tariffs[mId] && state.tariffs[mId].CN && state.tariffs[mId].CN.KR) state.tariffs[mId].CN.KR.adCvd = rate;
+        SCENARIO.materials.forEach(mId => {
+          const t = state.tariffs[mId] && state.tariffs[mId][SCENARIO.orig] && state.tariffs[mId][SCENARIO.orig][SCENARIO.dest];
+          if (t) t.adCvd = rate;
         });
         renderAll();
-        showToast(`한국 수입 중국산 도금·컬러강판 반덤핑 관세 ${rate}%를 반영했습니다.`);
+        showToast(`${SCENARIO.label} ${rate}%를 반영했습니다.`);
       });
       $('chkManausZfm').addEventListener('change', (e) => {
         state.applyManausZfm = e.target.checked;
         renderAll();
-        showToast(state.applyManausZfm ? '마나우스 ZFM 기본관세 88% 감면 적용 (반덤핑은 미면제)' : '브라질 일반 Mercosur 관세 기준으로 전환했습니다.');
+        showToast(state.applyManausZfm ? `마나우스 ZFM 기본관세 ${zfmReductionPct()}% 감면 적용 (반덤핑은 미면제)` : '브라질 일반 Mercosur 관세 기준으로 전환했습니다.');
       });
       $('chkBondedTH').addEventListener('change', (e) => {
         state.bondedExemptions.TH = e.target.checked;
@@ -2271,20 +2945,21 @@
       $('presetBase').addEventListener('click', () => {
         const mat = getActiveMaterial();
         state.fobPrices[mat.id] = { ...mat.defaultFob };
-        state.originAvailable[mat.id] = { KR: true, CN: true, TH: true, IN: true, US: true };
+        state.originAvailable[mat.id] = Object.fromEntries(ORIGINS.map(o => [o.id, mat.defaultFob[o.id] !== null && mat.defaultFob[o.id] !== undefined]));
         renderAll();
-        showToast('2026 Q4 시장 기준 FOB 단가를 적용했습니다.');
+        showToast(`데이터 기준(${DATA.meta.asOf}) 시장가 FOB를 적용했습니다.`);
       });
       $('presetChinaDrop').addEventListener('click', () => {
         const mat = getActiveMaterial();
+        if (!(mat.defaultFob.CN > 0)) { showToast('이 품목은 데이터에 중국 FOB가 없습니다.'); return; }
         state.fobPrices[mat.id] = { ...mat.defaultFob, CN: Math.round(mat.defaultFob.CN * 0.90) };
         renderAll();
         showToast('중국 FOB −10% 시나리오를 적용했습니다.');
       });
       $('presetEqualFob').addEventListener('click', () => {
         const mat = getActiveMaterial();
-        const base = mat.defaultFob.KR;
-        state.fobPrices[mat.id] = { KR: base, CN: base, TH: base, IN: base, US: base };
+        const base = mat.defaultFob.KR > 0 ? mat.defaultFob.KR : ORIGINS.map(o => mat.defaultFob[o.id]).find(v => v > 0);
+        state.fobPrices[mat.id] = Object.fromEntries(ORIGINS.map(o => [o.id, base]));
         renderAll();
         showToast('동일 FOB 시나리오를 적용했습니다.');
       });
@@ -2297,6 +2972,31 @@
         syncControlsFromState();
         renderAll();
         showToast('모든 품목의 FOB 단가·생산지·운임·관세 설정을 초기화했습니다.');
+      });
+
+      // ---- Data exchange (Gemini round-trip) ------------------------------------
+      $('btnDataExport').addEventListener('click', () => {
+        downloadText(`dashboard_data_${fileSafe(DATA.meta.asOf)}.json`, serializeData(DATA) + '\n', 'application/json');
+        showToast('현재 데이터를 JSON으로 내려받았습니다. 이 파일을 Gemini에 첨부하세요.');
+      });
+      $('btnDataApply').addEventListener('click', () => importText($('dataPasteBox').value));
+      $('inputDataImport').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => importText(String(reader.result || ''));
+        reader.readAsText(file, 'utf-8');
+        e.target.value = '';
+      });
+      $('btnDataRevert').addEventListener('click', () => {
+        applyNewData(clone(ORIGINAL_DATA));
+        $('dataImportReport').innerHTML = '<div class="ok">이 파일을 열었을 때의 데이터로 되돌렸습니다.</div>';
+      });
+      $('btnDataSaveHtml').addEventListener('click', () => {
+        const html = buildHtmlWithData();
+        if (!html) { showToast('HTML 원본을 찾지 못해 저장할 수 없습니다.'); return; }
+        downloadText(`global_sourcing_dashboard_${fileSafe(DATA.meta.asOf)}.html`, html, 'text/html');
+        showToast('새 데이터가 들어간 HTML을 저장했습니다. 이 파일을 공유하면 됩니다.');
       });
 
       // ---- Exports -------------------------------------------------------------
@@ -2323,9 +3023,92 @@
       });
     }
 
+    // ---- Data exchange helpers ---------------------------------------------------
+    const ORIGINAL_DATA = clone(DATA);
+    const fileSafe = (s) => String(s || 'data').replace(/[^0-9A-Za-z가-힣._-]+/g, '-');
+
+    function downloadText(filename, text, type) {
+      const blob = new Blob([text], { type: `${type};charset=utf-8` });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Gemini often wraps JSON in a ```json fence and adds prose around it.
+    function extractJson(text) {
+      const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (fence) return fence[1].trim();
+      const a = text.indexOf('{'), b = text.lastIndexOf('}');
+      return a >= 0 && b > a ? text.slice(a, b + 1) : text.trim();
+    }
+
+    function reportBox(kind, title, items) {
+      const list = items && items.length ? `<ul class="${kind === 'ok' ? 'warn-list' : ''}">${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : '';
+      return `<div class="${kind}"><b>${escapeHtml(title)}</b>${list}</div>`;
+    }
+
+    function applyNewData(next) {
+      const keep = {
+        selectedMaterialId: state.selectedMaterialId, selectedDetailDest: state.selectedDetailDest, priceBasis: state.priceBasis,
+        salesType: state.salesType, plantZoneType: state.plantZoneType, applyFta: state.applyFta, applyAdCvd: state.applyAdCvd,
+        includeDomestic: state.includeDomestic, applyManausZfm: state.applyManausZfm, bondedExemptions: { ...state.bondedExemptions },
+        insuranceRatePct: state.insuranceRatePct, freightMultiplierPct: state.freightMultiplierPct, activeFreightSources: [...state.activeFreightSources]
+      };
+      const before = DATA;
+      applyData(next);
+      initAppState();
+      Object.assign(state, keep);
+      fillDestDropdown();
+      syncControlsFromState();
+      renderAll();
+      return diffSummary(before, next);
+    }
+
+    function importText(text) {
+      const box = $('dataImportReport');
+      if (!String(text).trim()) { box.innerHTML = reportBox('bad', '붙여넣은 내용이 없습니다.'); return; }
+      let patch;
+      try { patch = JSON.parse(extractJson(String(text))); }
+      catch (err) {
+        box.innerHTML = reportBox('bad', 'JSON 문법 오류 — 적용하지 않았습니다.', [err.message, 'Gemini 답변의 JSON 코드블록만 붙여넣거나, 쉼표·따옴표 누락이 없는지 확인하세요.']);
+        return;
+      }
+      const merged = mergeData(DATA, patch);
+      const v = validateData(merged.data);
+      const errors = merged.errors.concat(v.errors);
+      if (errors.length) {
+        box.innerHTML = reportBox('bad', `적용하지 않았습니다 — ${errors.length}가지 문제를 고쳐 다시 붙여넣으세요.`, errors);
+        return;
+      }
+      const diff = applyNewData(merged.data);
+      const parts = [
+        diff.routes && `운임 ${diff.routes}구간`, diff.tariffRows && `관세 ${diff.tariffRows}행`, diff.materials && `품목 ${diff.materials}건`,
+        diff.destinations && `거점·생산국 ${diff.destinations}건`, diff.other.length && diff.other.join('·')
+      ].filter(Boolean);
+      const title = parts.length ? `적용 완료 — ${parts.join(', ')} 변경, 변경 기록 +${diff.logs}건` : '적용했지만 바뀐 값이 없습니다 (현재 데이터와 동일).';
+      box.innerHTML = reportBox('ok', title, merged.notes.concat(v.warnings));
+      if (parts.length && diff.logs === 0) box.innerHTML += reportBox('bad', '값은 바뀌었는데 changeLog가 비어 있습니다. 무엇을 어떤 출처로 바꿨는지 Gemini에게 changeLog를 요청하세요.');
+      $('dataPasteBox').value = '';
+      showToast(parts.length ? '새 데이터를 반영했습니다. 결과가 맞으면 ③ HTML 저장을 누르세요.' : '바뀐 값이 없습니다.');
+    }
+
+    // Rebuild the page source with the current DATA in the JSON block.
+    function buildHtmlWithData() {
+      const open = '<script type="application/json" ' + 'id="dashboard-data">';
+      const i = PRISTINE_HTML.indexOf(open);
+      const j = i < 0 ? -1 : PRISTINE_HTML.indexOf('</' + 'script>', i);
+      if (i < 0 || j < 0) return null;
+      return PRISTINE_HTML.slice(0, i + open.length) + '\n' + serializeData(DATA) + '\n' + PRISTINE_HTML.slice(j);
+    }
+
     function bootDashboard() {
       try {
-        populateDestDropdown();
+        fillDestDropdown();
         setupEventListeners();
         syncControlsFromState();
         renderAll();
