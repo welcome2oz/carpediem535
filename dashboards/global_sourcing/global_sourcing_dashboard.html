@@ -1,0 +1,2263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>글로벌 원재료 최적 소싱처 분석 대시보드 (3-Second Executive View)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lgred: {
+              DEFAULT: '#A50034',
+              light: '#FDF2F5',
+              soft: '#F9D8E2',
+              hover: '#8A002B',
+              active: '#FD312E'
+            },
+            lgdark: {
+              DEFAULT: '#111111',
+              card: '#1C1C1E',
+              muted: '#2C2C2E'
+            },
+            lgwarm: {
+              bg: '#F4F3EF',
+              surface: '#FAF9F6',
+              border: '#E4E2DC'
+            }
+          },
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --lg-heritage-red: #A50034;
+      --lg-active-red: #FD312E;
+      --lg-warm-bg: #F4F3EF;
+      --lg-charcoal: #111111;
+    }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--lg-warm-bg);
+      color: var(--lg-charcoal);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.015em;
+    }
+    .font-mono {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .lg-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E4E2DC;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px rgba(17, 17, 17, 0.03);
+    }
+    .lg-brand-gradient {
+      background: linear-gradient(135deg, #A50034 0%, #C40452 60%, #FD312E 100%);
+    }
+    .matrix-cell {
+      transition: all 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .matrix-cell:hover {
+      transform: translateY(-2px);
+      z-index: 20;
+      box-shadow: 0 8px 20px rgba(165, 0, 52, 0.14);
+    }
+    .quick-dest-card {
+      transition: all 0.15s ease;
+    }
+    .quick-dest-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(17, 17, 17, 0.08);
+      border-color: #A50034;
+    }
+    #hoverTooltipPopup {
+      pointer-events: none;
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      box-shadow: 0 20px 38px -6px rgba(17, 17, 17, 0.28), 0 8px 16px -4px rgba(165, 0, 52, 0.12);
+    }
+    ::-webkit-scrollbar {
+      height: 7px;
+      width: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #EFECE6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C7C3B8;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #A50034;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- LG Signature Top Accent Line -->
+  <div class="h-1 w-full lg-brand-gradient"></div>
+
+  <!-- Compact Header -->
+  <header class="bg-[#111111] text-white border-b border-[#262626] sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-[#A50034] flex items-center justify-center font-extrabold text-xs tracking-tighter text-white border border-white/15 select-none">
+          LG
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">글로벌 원재료 최적 소싱 대시보드</h1>
+            <span class="hidden sm:inline-block text-[10px] bg-[#A50034] text-white px-2 py-0.5 rounded-full font-bold">3초 요약 · 호버 팝업 뷰</span>
+          </div>
+          <p class="text-[11px] text-neutral-400">11개 법인 거점별 최적 소싱처 · 마우스 커서를 셀에 올리면 상세 원가가 팝업되며, 미생산 국가는 "없음(-)" 처리됩니다</p>
+        </div>
+      </div>
+
+      <!-- Compact Action Buttons -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="btnOpenPortModal" type="button" class="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-3 py-1.5 rounded-full font-semibold transition">
+          ⚓ 기준항(POD) 매핑 안내
+        </button>
+        <button id="btnToggleSettingsDrawer" type="button" class="text-xs bg-[#FAF9F6] hover:bg-white text-[#111111] border border-neutral-300 px-3 py-1.5 rounded-full font-extrabold transition shadow-xs">
+          ⚙️ 상세 설정 · FOB 키인(없음 설정) ▲
+        </button>
+        <div class="relative inline-block">
+          <button id="btnDownloadMenuToggle" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1 shadow-sm">
+            <span>📥</span> Raw Data 다운로드 ▾
+          </button>
+          <div id="downloadDropdownMenu" class="hidden absolute right-0 mt-1.5 w-60 bg-[#1C1C1E] border border-neutral-700 rounded-xl shadow-xl py-1.5 z-50 text-xs text-white">
+            <button id="btnExportCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
+              <span>📊 현재 품목 매트릭스 (CSV)</span>
+              <span class="text-[10px] text-neutral-400">55구간</span>
+            </button>
+            <button id="btnExportFreightRawCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
+              <span>🚢 해상물류비 Raw Data (CSV)</span>
+              <span class="text-[10px] text-neutral-400">3대지수</span>
+            </button>
+            <button id="btnExportTariffRawCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
+              <span>🏛️ 전품목 관세 Raw Data (CSV)</span>
+              <span class="text-[10px] text-neutral-400">330구간</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clean Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between border-t border-neutral-800 bg-[#161616] overflow-x-auto">
+      <div class="flex items-center gap-1">
+        <button id="tabBtnMatrix" type="button" data-tab="matrix" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-[#FD312E] text-white whitespace-nowrap transition">
+          ⚡ 1. 품목별 3초 요약 & 호버 매트릭스
+        </button>
+        <button id="tabBtnSummary" type="button" data-tab="summary" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
+          📑 2. 전 품목(6종) × 11개 거점 한눈에 보기
+        </button>
+        <button id="tabBtnFreight" type="button" data-tab="freight" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
+          🚢 3. 해상물류비 원천데이터 (55항로)
+        </button>
+        <button id="tabBtnTariff" type="button" data-tab="tariff" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
+          🏛️ 4. 관세·무역구제 원천데이터
+        </button>
+      </div>
+      <div class="hidden lg:flex items-center gap-2 text-[11px] text-neutral-400 pr-2 whitespace-nowrap">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>미생산 국가는 "없음" 선택 시 매트릭스에 "-"로 표시됩니다</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+
+    <!-- SINGLE-BAR FILTER, MATERIAL SELECTOR & FOB KEY-IN (With "없음" Selector!) -->
+    <section class="lg-card px-4 py-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Material Pills -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs font-extrabold text-neutral-500 mr-1 flex items-center gap-1">
+            <span class="w-1.5 h-3.5 rounded-full bg-[#A50034] inline-block"></span>품목:
+          </span>
+          <div id="materialBtnGroup" class="flex flex-wrap gap-1.5"></div>
+          <span id="activeHsBadge" class="text-[11px] font-mono bg-[#F4F3EF] text-neutral-700 px-2 py-0.5 rounded-md border border-[#E4E2DC] font-bold ml-1">HS 7210.49</span>
+        </div>
+
+        <!-- Quick Core Toggles -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <select id="selectPriceBasis" class="bg-[#FAF9F6] border border-[#E4E2DC] rounded-lg px-2.5 py-1.5 font-bold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A50034]">
+            <option value="landed">기준항 통관도착가 (Landed)</option>
+            <option value="door">최종공장 입고가 (내륙포함)</option>
+            <option value="cif">순수 기준항 CIF</option>
+            <option value="addon">총 부대비용 (물류+관세)</option>
+          </select>
+
+          <!-- 1) 판매 구분: 내수(기본값·관세부과) / 수출 -->
+          <div class="inline-flex items-center bg-[#F4F3EF] p-0.5 rounded-lg border border-[#E4E2DC]" title="완제품 판매 목적 선택: 현지 내수 판매용(기본값·관세 및 AD 정상 부과) vs 해외 수출용">
+            <span class="text-[11px] font-extrabold text-neutral-600 px-2">판매:</span>
+            <button type="button" id="btnSalesDomestic" class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition">🏠 내수(과세기본)</button>
+            <button type="button" id="btnSalesExport" class="px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition">🌐 수출</button>
+          </div>
+
+          <!-- 2) 공장 구분: 비보세(기본값·관세부과) / 보세 -->
+          <div class="inline-flex items-center bg-[#F4F3EF] p-0.5 rounded-lg border border-[#E4E2DC]" title="공장 자격 선택: 비보세 일반공장(기본값·관세 및 AD 정상 부과) vs 보세구역(특구/수출면허)">
+            <span class="text-[11px] font-extrabold text-neutral-600 px-2">공장:</span>
+            <button type="button" id="btnZoneNonBonded" class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition">🏢 비보세(일반기본)</button>
+            <button type="button" id="btnZoneBonded" class="px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition">🏭 보세</button>
+          </div>
+
+          <div class="flex items-center gap-1 bg-[#FDF2F5] px-2.5 py-1 rounded-lg border border-[#F3C1CF]" title="재정경제부고시 제2026-80호(2026.6.12 시행) 중국산 도금·컬러강판 반덤핑 관세">
+            <span class="text-[11px] font-bold text-[#A50034]">🇰🇷 대중국 철강AD:</span>
+            <select id="selectKrChinaSteelAd" class="bg-transparent font-extrabold text-[#A50034] focus:outline-none cursor-pointer">
+              <option value="25.75">25.75% (기본)</option>
+              <option value="22.34">22.34% (바오터우)</option>
+              <option value="26.28">26.28% (수강징탕)</option>
+              <option value="33.67">33.67% (윈스톤)</option>
+              <option value="0">0% (미적용)</option>
+            </select>
+          </div>
+
+          <label class="inline-flex items-center gap-1 bg-[#E6F4F0] px-2.5 py-1 rounded-lg border border-[#007A5E]/40 font-extrabold text-[#00664E] cursor-pointer" title="태국 BOI Section 36(보세/수출가공) 및 태국 DFT 전기·전자(가전) 제조용 원재료 반덤핑(AD) 직권 면제 적용 (중국산 GI 35.5%·PCM 29.8% 및 한국산 AD 0% 면제)">
+            <input id="chkThailandBondedExemption" type="checkbox" class="rounded border-[#007A5E] text-[#007A5E] focus:ring-[#007A5E]" />
+            <span>🇹🇭 태국 보세·가전용 AD면제</span>
+          </label>
+
+          <label class="inline-flex items-center gap-1 bg-[#FAF9F6] px-2.5 py-1 rounded-lg border border-[#E4E2DC] font-semibold text-neutral-800 cursor-pointer" title="브라질 마나우스 자유무역지대(ZFM) 기본관세 88% 감면 (단, 반덤핑 관세는 미면제)">
+            <input id="chkManausZfm" type="checkbox" class="rounded border-neutral-400 text-[#A50034] focus:ring-[#A50034]" />
+            <span>🇧🇷 마나우스 ZFM(기본세감면)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Detailed Settings & FOB Key-in Drawer (Open by default so user can immediately see and use the "없음" option, and collapsible anytime) -->
+      <div id="settingsDrawer" class="mt-3 pt-3 border-t border-[#EBE9E2] space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-3 text-xs">
+            <span class="font-extrabold text-neutral-900 flex items-center gap-1">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#A50034] text-white text-[10px]">✎</span>
+              생산지별 FOB 단가 Key-in <span class="text-neutral-500 font-normal">(생산업체가 없는 국가는 <strong class="text-[#A50034]">"없음"</strong> 선택 시 매트릭스에 <strong class="text-neutral-900">"-"</strong> 표시)</span>
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer">
+              <input id="chkApplyFta" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
+              <span>FTA 우선</span>
+            </label>
+            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer">
+              <input id="chkApplyAdCvd" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
+              <span>AD/232조 반영</span>
+            </label>
+            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer mr-1">
+              <input id="chkIncludeDomestic" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
+              <span>내수포함</span>
+            </label>
+            <button type="button" id="presetBase" class="text-[11px] bg-[#F4F3EF] hover:bg-[#E6E4DD] text-neutral-800 border border-[#DFDDD4] px-2.5 py-1 rounded-full font-semibold transition">시장가</button>
+            <button type="button" id="presetChinaDrop" class="text-[11px] bg-[#FDF2F5] hover:bg-[#F9D8E2] text-[#A50034] border border-[#F3C1CF] px-2.5 py-1 rounded-full font-semibold transition">중국 -10%</button>
+            <button type="button" id="presetEqualFob" class="text-[11px] bg-neutral-900 hover:bg-neutral-800 text-white px-2.5 py-1 rounded-full font-semibold transition">동일 FOB</button>
+            <button type="button" id="btnResetDefaults" class="text-[11px] bg-white hover:bg-neutral-100 text-neutral-600 border border-neutral-300 px-2.5 py-1 rounded-full font-semibold transition">초기화</button>
+          </div>
+        </div>
+
+        <!-- 5 Origin FOB Key-in + "없음" Selector Cards -->
+        <div id="fobInputGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"></div>
+
+        <!-- Per-Subsidiary Bonded Zone / End-Use AD & Tariff Exemption Toggles -->
+        <div class="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#E4E2DC] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-center gap-1.5 font-extrabold text-neutral-800">
+            <span class="px-1.5 py-0.5 rounded bg-[#111111] text-white text-[10px]">보세·용도면제</span>
+            <span>거점별 보세구역(Bonded/SEZ) · 수출용 원재료 AD/관세 면제 시뮬레이션:</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-1 font-bold text-[#00664E] cursor-pointer" title="태국 BOI Sec.36 / Free Zone 및 DFT 가전·전기전자 제조용 도금·컬러강판 AD 면제(0%)">
+              <input id="chkBondedTH" type="checkbox" class="rounded text-[#007A5E]" />
+              <span>🇹🇭 태국(BOI·가전용 AD면제)</span>
+            </label>
+            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="인니 보세구역(Kawasan Berikat) 및 KITE 수출가공용 수입원자재 관세·반덤핑(BMAD) 면제(0%)">
+              <input id="chkBondedID" type="checkbox" class="rounded text-[#A50034]" />
+              <span>🇮🇩 인니(KB·KITE 보세면제)</span>
+            </label>
+            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="인도 Advance Authorisation(사전수출면허) 및 SEZ/EOU 수출용 원자재 기본관세·AD 면제(0%)">
+              <input id="chkBondedIN" type="checkbox" class="rounded text-[#A50034]" />
+              <span>🇮🇳 인도(AA·SEZ 수출면제)</span>
+            </label>
+            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="한국 보세공장 반입 후 전량 해외 재수출 물량에 대한 중국산 도금·컬러강판 반덤핑(25.75%) 면제(0%) — 내수 반입분은 면제 불가">
+              <input id="chkBondedKR" type="checkbox" class="rounded text-[#A50034]" />
+              <span>🇰🇷 한국(보세공장 수출분 AD면제)</span>
+            </label>
+            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="이집트 수에즈경제특구(SCZONE) 및 Free Zone 수출가공용 원재료 관세·AD 면제(0%)">
+              <input id="chkBondedEG" type="checkbox" class="rounded text-[#A50034]" />
+              <span>🇪🇬 이집트(SCZONE 보세면제)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: 3-SECOND EXECUTIVE VIEW & HOVER MATRIX                       -->
+    <!-- =================================================================== -->
+    <div id="tabPanelMatrix" class="space-y-4">
+
+      <!-- 3-SECOND TEST BLOCK 1: 4 ULTRA-CLEAR HEADLINE KPI CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="lg-card p-3.5 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#A50034]"></div>
+          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">11개 거점 평균 최적가</div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="kpiAvgBestPrice" class="text-2xl sm:text-3xl font-black text-neutral-900 font-mono tracking-tight">$0</span>
+            <span class="text-xs text-neutral-500 font-bold">/ MT</span>
+          </div>
+          <div id="kpiAvgBestSub" class="mt-1 text-xs text-[#007A5E] font-extrabold">2순위 대비 평균 -$0/MT 절감</div>
+        </div>
+
+        <div class="lg-card p-3.5 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#111111]"></div>
+          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">최다 1위 최적 소싱국</div>
+          <div class="mt-1 flex items-center justify-between">
+            <span id="kpiTopOrigin" class="text-xl sm:text-2xl font-black text-[#A50034]">-</span>
+            <span id="kpiTopOriginCount" class="text-xs bg-[#FDF2F5] text-[#A50034] border border-[#F3C1CF] px-2 py-0.5 rounded-full font-extrabold">0개 거점</span>
+          </div>
+          <div id="kpiTopOriginSub" class="mt-1 text-xs text-neutral-500 font-medium truncate">단거리 해운 및 무관세 협정 우위</div>
+        </div>
+
+        <div class="lg-card p-3.5 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#007A5E]"></div>
+          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">한국(부산) 1순위 최적 소싱</div>
+          <div class="mt-1 flex items-center justify-between">
+            <span id="kpiKoreaBest" class="text-xl sm:text-2xl font-black text-[#007A5E] font-mono">-</span>
+            <span id="kpiKoreaDiff" class="text-xs bg-[#E6F4F0] text-[#007A5E] px-2 py-0.5 rounded-full font-extrabold">-$0</span>
+          </div>
+          <div id="kpiKoreaSub" class="mt-1 text-xs text-neutral-500 font-medium truncate">중국산 AD 부과 여부 반영</div>
+        </div>
+
+        <div class="lg-card p-3.5 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#FD312E]"></div>
+          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">활성 생산지 / 주의 항로</div>
+          <div class="mt-1 flex items-baseline justify-between">
+            <span id="kpiTradeRiskCount" class="text-2xl sm:text-3xl font-black text-[#A50034] font-mono">0</span>
+            <span id="kpiActiveOriginsBadge" class="text-xs text-[#A50034] bg-[#FDF2F5] border border-[#F3C1CF] px-2 py-0.5 rounded-full font-bold">생산국 5개 활성</span>
+          </div>
+          <div class="mt-1 text-xs text-neutral-500 font-medium truncate">미생산("없음") 제외 기준 무역구제 구간</div>
+        </div>
+      </div>
+
+      <!-- 3-SECOND TEST BLOCK 2: 11 DESTINATION WINNERS AT A GLANCE (Hoverable Cards) -->
+      <div class="lg-card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-4 rounded-full bg-[#A50034] inline-block"></span>
+            <h2 class="text-sm sm:text-base font-extrabold text-neutral-900">한눈에 보는 11개 거점별 1순위 최적 소싱처</h2>
+            <span class="text-[11px] text-neutral-500 hidden sm:inline">— 카드에 마우스를 올리면 전체 순위 비교와 항구(POD) 상세 내역이 팝업됩니다</span>
+          </div>
+          <span id="quickStripMatBadge" class="text-xs font-bold text-[#A50034] bg-[#FDF2F5] border border-[#F3C1CF] px-2.5 py-0.5 rounded-full">Steel · GI</span>
+        </div>
+        <div id="quickDestCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-11 gap-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- 3-SECOND TEST BLOCK 3: ULTRA-CLEAN 5x11 MATRIX (Numbers Only + "-" for None + Cursor Hover Popup) -->
+      <div class="lg-card overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#E4E2DC] flex flex-wrap items-center justify-between gap-2 bg-[#FAF9F6]">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-4 rounded-full bg-[#111111] inline-block"></span>
+            <h3 class="text-sm sm:text-base font-extrabold text-neutral-900">출발지(5개국) × 도착 거점(11개소) CIF · 통관도착가 분석 매트릭스</h3>
+            <span class="text-xs text-neutral-500 hidden md:inline">(단위: USD/MT · 생산업체 <strong class="text-[#A50034]">"없음"</strong> 선택 시 <strong class="text-neutral-900">"-"</strong> 표시 · <strong>셀에 커서를 올리면 상세 원가 팝업</strong>)</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-semibold">
+            <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#007A5E] inline-block"></span> ★ 1위 최적</span>
+            <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#E4E2DC] border border-neutral-500 inline-block"></span> 2위 대안</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#A50034] inline-block"></span> 고율 관세/AD 주의</span>
+            <span class="inline-flex items-center gap-1 text-neutral-400"><span class="font-mono font-bold text-neutral-500">-</span> 생산업체 없음</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr id="matrixHeaderRow" class="bg-[#F4F3EF] text-neutral-800 text-xs border-b border-[#E4E2DC]"></tr>
+            </thead>
+            <tbody id="matrixTableBody" class="divide-y divide-[#EBE9E2] text-xs sm:text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COMPACT VISUAL CHART SECTION -->
+      <div class="lg-card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-4 rounded-full bg-[#A50034] inline-block"></span>
+            <h4 id="chartDestTitle" class="text-sm sm:text-base font-extrabold text-neutral-900">선택 거점 5대 생산지 원가 구조 비교 (FOB + 해운·보험 + 관세)</h4>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="selectChartDest" class="text-xs font-bold text-neutral-600">비교 거점 선택:</label>
+            <select id="selectChartDest" class="text-xs bg-[#FAF9F6] border border-neutral-300 rounded-lg px-3 py-1.5 font-bold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A50034]"></select>
+          </div>
+        </div>
+        <div class="relative h-60 w-full">
+          <canvas id="destComparisonChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: ALL 6 MATERIALS SUMMARY MATRIX (Clean + Hover Popup)         -->
+    <!-- =================================================================== -->
+    <div id="tabPanelSummary" class="hidden space-y-4">
+      <div class="lg-card overflow-hidden">
+        <div class="px-4 py-3.5 border-b border-[#E4E2DC] bg-[#FAF9F6] flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-neutral-900">전 품목(Steel 2종 · Resin 4종) × 11개 법인 거점 최적 소싱 한눈에 보기</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">품목별로 <strong>"없음"</strong> 설정된 생산국은 자동 제외되며, 각 셀에 <strong>마우스 커서를 올리면 CIF·관세율·2순위 대안 및 절감액이 팝업</strong>됩니다.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-[#111111] text-white uppercase border-b border-neutral-800">
+                <th class="py-3 px-3.5 font-bold">최종 목적지 거점 (인근 기준항)</th>
+                <th class="py-3 px-3 font-bold text-center bg-[#262626]">Steel: GI<br><span class="text-[10px] font-mono text-neutral-300">HS 7210.49</span></th>
+                <th class="py-3 px-3 font-bold text-center bg-[#262626]">Steel: PCM<br><span class="text-[10px] font-mono text-neutral-300">HS 7210.70</span></th>
+                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: ABS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.30</span></th>
+                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: 복합PP<br><span class="text-[10px] font-mono text-pink-200">HS 3902.30</span></th>
+                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: HIPS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.19</span></th>
+                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: EPS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.11</span></th>
+              </tr>
+            </thead>
+            <tbody id="allMaterialsSummaryBody" class="divide-y divide-[#EBE9E2]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: OCEAN FREIGHT BENCHMARK RAW DATA                             -->
+    <!-- =================================================================== -->
+    <div id="tabPanelFreight" class="hidden space-y-4">
+      <div class="lg-card p-4 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#EBE9E2] pb-3">
+          <div>
+            <h3 class="text-base font-extrabold text-neutral-900">인근 기준항(Port Pair)별 해상물류비 3대 지수 원천데이터 (55개 항로)</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">Drewry WCI·IACI / SCFI, Freightos(FBX), Cogoport 스팟 운임 평균 및 톤당 환산 해운비입니다.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 bg-[#FAF9F6] p-2.5 rounded-xl border border-[#E4E2DC]">
+            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
+              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="drewry" checked />
+              <span>Drewry/SCFI</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
+              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="freightos" checked />
+              <span>Freightos FBX</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
+              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="cogoport" checked />
+              <span>Cogoport</span>
+            </label>
+            <button id="btnExportFreightTabCsv" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3 py-1 rounded-full font-bold transition">
+              📥 CSV 다운로드
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#FAF9F6] border border-[#E4E2DC] rounded-xl p-3">
+          <div>
+            <label for="inputContainerTons" class="block text-xs font-bold text-neutral-800">컨테이너당 적재중량 (MT/Box)</label>
+            <div class="mt-1 flex items-center gap-2">
+              <input id="inputContainerTons" type="number" min="5" max="30" step="0.5" value="24" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
+              <span class="text-xs text-neutral-500">MT (철강 24, 수지 22, EPS 17)</span>
+            </div>
+          </div>
+          <div>
+            <label for="inputInsuranceRate" class="block text-xs font-bold text-neutral-800">해상 적하보험료율 (%)</label>
+            <div class="mt-1 flex items-center gap-2">
+              <input id="inputInsuranceRate" type="number" min="0" max="5" step="0.05" value="0.20" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
+              <span class="text-xs text-neutral-500">% (110% 부보 기준)</span>
+            </div>
+          </div>
+          <div>
+            <label for="inputFreightMultiplier" class="block text-xs font-bold text-neutral-800">해상운임 일괄 시황 조정 (%)</label>
+            <div class="mt-1 flex items-center gap-2">
+              <input id="inputFreightMultiplier" type="number" min="50" max="250" step="5" value="100" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
+              <span class="text-xs text-neutral-500">% (100% = 현재 공시지수)</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="freightSourceWarning" class="hidden p-2 rounded-lg bg-[#FDF2F5] border border-[#F3C1CF] text-xs text-[#A50034] font-semibold">
+          ⚠️ 최소 2개 이상의 물류비 출처를 선택해야 공정한 평균 해상물류비가 산출됩니다.
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-[#F4F3EF] text-neutral-700 uppercase border-b border-[#E4E2DC]">
+                <th class="py-2.5 px-3 font-bold">출발지</th>
+                <th class="py-2.5 px-3 font-bold">도착 법인</th>
+                <th class="py-2.5 px-3 font-bold">기준 항로 (POL ➔ 인근 POD)</th>
+                <th class="py-2.5 px-3 font-bold text-right">Drewry/SCFI ($/Box)</th>
+                <th class="py-2.5 px-3 font-bold text-right">Freightos ($/Box)</th>
+                <th class="py-2.5 px-3 font-bold text-right">Cogoport ($/Box)</th>
+                <th class="py-2.5 px-3 font-bold text-right bg-[#FAF9F6]">평균 ($/Box)</th>
+                <th class="py-2.5 px-3 font-bold text-right bg-[#FDF2F5] text-[#A50034]">톤당 해운비 ($/MT)</th>
+                <th class="py-2.5 px-3 font-bold text-right">내륙운송 ($/MT)</th>
+              </tr>
+            </thead>
+            <tbody id="freightDetailTableBody" class="divide-y divide-[#EBE9E2]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: TARIFF, FTA & AD/CVD RAW DATA                                -->
+    <!-- =================================================================== -->
+    <div id="tabPanelTariff" class="hidden space-y-4">
+      <div class="lg-card p-4 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#EBE9E2] pb-3">
+          <div>
+            <h3 class="text-base font-extrabold text-neutral-900">
+              품목별 관세·FTA·반덤핑(AD/CVD) 원천데이터 (<span id="tariffTabMaterialName" class="text-[#A50034]">GI</span>)
+            </h3>
+            <p class="text-xs text-neutral-500 mt-0.5">한국 재정경제부고시 제2026-80호 중국산 도금·컬러강판 AD(22.34~33.67%), 미국 232조·301조, 브라질 AD 및 ZFM 감면을 모두 포함합니다.</p>
+          </div>
+          <button id="btnExportTariffTabCsv" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3.5 py-1.5 rounded-full font-bold transition whitespace-nowrap">
+            📥 전 품목(330구간) 관세 CSV 다운로드
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-[#F4F3EF] text-neutral-700 uppercase border-b border-[#E4E2DC]">
+                <th class="py-2.5 px-3 font-bold">출발지</th>
+                <th class="py-2.5 px-3 font-bold">도착 거점</th>
+                <th class="py-2.5 px-3 font-bold text-right">MFN (%)</th>
+                <th class="py-2.5 px-3 font-bold text-right">FTA (%)</th>
+                <th class="py-2.5 px-3 font-bold">적용 협정</th>
+                <th class="py-2.5 px-3 font-bold text-right text-[#A50034]">AD/CVD/232조 (%)</th>
+                <th class="py-2.5 px-3 font-bold text-right bg-[#141414] text-white">실효 관세율 (%)</th>
+                <th class="py-2.5 px-3 font-bold">통관 및 무역구제 근거</th>
+              </tr>
+            </thead>
+            <tbody id="tariffDetailTableBody" class="divide-y divide-[#EBE9E2]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: PORT OF DISCHARGE (POD) MAPPING GUIDE -->
+  <div id="portGuideModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[#18181B] text-neutral-100 rounded-2xl border border-neutral-700 shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-3.5 border-b border-neutral-800 flex items-center justify-between bg-[#111111]">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-extrabold text-white">⚓ 10개국 11개 법인 최종 목적지(공장) 및 인근 기준 항구(POD) 매핑표</span>
+          <span class="text-[11px] bg-[#A50034] text-white px-2 py-0.5 rounded-full font-bold">물류 산정 기준</span>
+        </div>
+        <button id="btnClosePortModal" type="button" class="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-3 py-1 rounded-full border border-neutral-600 font-bold">
+          닫기 ✕
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-neutral-800 text-neutral-300 border-b border-neutral-700">
+              <th class="py-2 px-2.5 font-bold">법인 거점</th>
+              <th class="py-2 px-2.5 font-bold text-[#FF8A9E]">최종 목적지 (공장)</th>
+              <th class="py-2 px-2.5 font-bold text-emerald-300">인근 기준 도착항 (POD)</th>
+              <th class="py-2 px-2.5 font-bold text-right">항구➔공장 거리</th>
+              <th class="py-2 px-2.5 font-bold text-right">내륙운송비 (참고)</th>
+              <th class="py-2 px-2.5 font-bold">항로 및 통관 특이사항</th>
+            </tr>
+          </thead>
+          <tbody id="portGuideTableBody" class="divide-y divide-neutral-800 text-neutral-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING CURSOR HOVER TOOLTIP POPUP -->
+  <div id="hoverTooltipPopup" class="fixed z-50 hidden w-80 sm:w-96 bg-[#141416] text-white rounded-2xl border border-neutral-700 overflow-hidden text-xs">
+    <div class="h-1 w-full lg-brand-gradient"></div>
+    <div id="hoverTooltipContent" class="p-3.5 space-y-2.5"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-[#E4E2DC] mt-4 py-3 px-4 sm:px-6 text-[11px] text-neutral-500">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <strong class="text-neutral-800">검증 출처:</strong>
+        Drewry WCI·IACI · SCFI · Freightos FBX · Cogoport FCL · 한국 무역위·재경부 제2026-80호(중국산 도금·컬러강판 AD) · World Bank WITS · ITC MAcMap · USITC HTS · Brazil Secex
+      </div>
+      <div class="text-neutral-400">LG Tone & Manner · 3-Second Executive Edition</div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toastNotice" class="fixed bottom-5 right-5 z-50 hidden bg-[#111111] text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg border border-[#A50034]">
+    알림 메시지
+  </div>
+
+  <script>
+  (function() {
+    if (window.__LG_3SEC_DASHBOARD_V2__) {
+      const headers = document.querySelectorAll("header");
+      const mains = document.querySelectorAll("main");
+      const footers = document.querySelectorAll("footer");
+      for (let i = 1; i < headers.length; i++) headers[i].remove();
+      for (let i = 1; i < mains.length; i++) mains[i].remove();
+      for (let i = 1; i < footers.length; i++) footers[i].remove();
+      return;
+    }
+    window.__LG_3SEC_DASHBOARD_V2__ = true;
+
+    // =========================================================================
+    // 1. MASTER DATA DEFINITIONS
+    // =========================================================================
+    const ORIGINS = [
+      { id: 'KR', name: '한국', en: 'South Korea', port: '부산항 / 광양항 (KRPUS/KRKAN)', shortPort: '부산항(KRPUS)', flag: '🇰🇷' },
+      { id: 'CN', name: '중국', en: 'China', port: '상하이항 / 천진신강항 (CNSHA/CNTSN)', shortPort: '상하이/천진항', flag: '🇨🇳' },
+      { id: 'TH', name: '태국', en: 'Thailand', port: '람차방항 (THLCH)', shortPort: '람차방항(THLCH)', flag: '🇹🇭' },
+      { id: 'IN', name: '인도', en: 'India', port: '나바셰바항 / 문드라항 (INNSA/INMUN)', shortPort: '나바셰바/문드라항', flag: '🇮🇳' },
+      { id: 'US', name: '미국', en: 'USA', port: '휴스턴항 / 서배너항 (USHOU/USSAV)', shortPort: '휴스턴/서배너항', flag: '🇺🇸' }
+    ];
+
+    const DESTINATIONS = [
+      { id: 'KR', countryCode: 'KR', name: '한국 (부산)', shortName: '부산', city: '부산 (Busan)', port: '부산항', locode: 'KRPUS', flag: '🇰🇷', distanceKm: '25km (항만직결)', inlandBoxUsd: 220, portNote: '부산항 하역 후 인근 산단 직결 (중국산 도금·컬러강판 수입 시 2026.6.12 시행 반덤핑 관세 22.34~33.67% 부과)' },
+      { id: 'CN', countryCode: 'CN', name: '중국 (천진)', shortName: '천진', city: '천진 (Tianjin)', port: '천진 신강항', locode: 'CNTSN', flag: '🇨🇳', distanceKm: '45km (항만직결)', inlandBoxUsd: 240, portNote: '화북 최대 관문인 천진 신강항(Xingang, CNTSN) 직기항 기준' },
+      { id: 'IN_NOI', countryCode: 'IN', name: '인도 (노이다)', shortName: '노이다', city: '노이다 (Noida)', port: '문드라항+ICD다드리', locode: 'INMUN➔INDAD', flag: '🇮🇳', distanceKm: '1,150km (철도ICD)', inlandBoxUsd: 960, portNote: '구자라트 문드라항(INMUN) 하역 후 전용 화물철도(CONCOR)로 노이다 인근 ICD Dadri 통관' },
+      { id: 'IN_PUN', countryCode: 'IN', name: '인도 (푸네)', shortName: '푸네', city: '푸네 (Pune)', port: '나바셰바항 (JNPT)', locode: 'INNSA', flag: '🇮🇳', distanceKm: '150km (고속도로)', inlandBoxUsd: 380, portNote: '뭄바이 나바셰바항(JNPT, INNSA) 하역 후 푸네 공단까지 트럭 직송' },
+      { id: 'TH', countryCode: 'TH', name: '태국 (람차방)', shortName: '람차방', city: '람차방 (Laem Chabang)', port: '람차방항', locode: 'THLCH', flag: '🇹🇭', distanceKm: '30km (항만직결)', inlandBoxUsd: 210, portNote: '태국 최대 심수항인 람차방항(THLCH) 하역 후 동부경제회랑(EEC) 공단 직결' },
+      { id: 'ID', countryCode: 'ID', name: '인니 (자카르타)', shortName: '자카르타', city: '자카르타 (Jakarta)', port: '탄중프리옥항', locode: 'IDJKT', flag: '🇮🇩', distanceKm: '40km (수도권산단)', inlandBoxUsd: 260, portNote: '자카르타 관문 탄중프리옥항(IDJKT) 하역 후 인근 공단 트럭 운송' },
+      { id: 'SA', countryCode: 'SA', name: '사우디 (제다)', shortName: '제다', city: '제다 (Jeddah)', port: '제다 이슬람항', locode: 'SAJED', flag: '🇸🇦', distanceKm: '25km (항만직결)', inlandBoxUsd: 250, portNote: '홍해 연안 최대 항만인 제다 이슬람항(SAJED) 직기항 기준 (인도 서안 출발 최단거리)' },
+      { id: 'BR', countryCode: 'BR', name: '브라질 (마나우스)', shortName: '마나우스', city: '마나우스 (Manaus)', port: '마나우스항', locode: 'BRMAO', flag: '🇧🇷', distanceKm: '15km (아마존하천항)', inlandBoxUsd: 280, portNote: '아마존강 피더선으로 마나우스항(BRMAO) 직기항 (마나우스 자유무역지대 ZFM 88% 관세감면 지역)' },
+      { id: 'EG', countryCode: 'EG', name: '이집트 (카이로)', shortName: '카이로', city: '카이로 (Cairo)', port: '아인소크나/알렉산드리아', locode: 'EGSOK/EGALY', flag: '🇪🇬', distanceKm: '120km (소크나➔카이로)', inlandBoxUsd: 350, portNote: '아시아발은 홍해측 아인소크나항(EGSOK, 카이로 120km) 하역 최적, 미국발은 지중해 알렉산드리아항 기준' },
+      { id: 'US', countryCode: 'US', name: '미국 (클락스빌)', shortName: '클락스빌', city: '클락스빌 (Clarksville, TN)', port: '서배너/찰스턴항+철도', locode: 'USSAV/USCHS', flag: '🇺🇸', distanceKm: '720km (IPI 철도)', inlandBoxUsd: 1350, portNote: '미 동안 서배너항(USSAV)·찰스턴항 입항 후 철도 연계 (무역확장법 232조 철강 50% 및 301조 적용)' },
+      { id: 'NO', countryCode: 'NO', name: '노르웨이 (오슬로)', shortName: '오슬로', city: '오슬로 (Oslo)', port: '오슬로항', locode: 'NOOSL', flag: '🇳🇴', distanceKm: '20km (항만직결)', inlandBoxUsd: 290, portNote: '유럽 허브항 환적 후 오슬로항(NOOSL) 직기항 (노르웨이 공산품 전 품목 관세 0%)' }
+    ];
+
+    const MATERIALS = [
+      { id: 'GI', category: 'Steel', name: 'GI (도금강판)', fullName: 'GI (용융아연도금강판)', hsCode: '7210.49', defaultTonsPerBox: 24, defaultFob: { KR: 740, CN: 655, TH: 775, IN: 720, US: 960 } },
+      { id: 'PCM', category: 'Steel', name: 'PCM (컬러강판)', fullName: 'PCM (컬러강판/도장강판)', hsCode: '7210.70', defaultTonsPerBox: 24, defaultFob: { KR: 920, CN: 815, TH: 950, IN: 885, US: 1180 } },
+      { id: 'ABS', category: 'Resin', name: 'ABS (합성수지)', fullName: 'ABS (고기능성 합성수지)', hsCode: '3903.30', defaultTonsPerBox: 22, defaultFob: { KR: 1380, CN: 1310, TH: 1365, IN: 1440, US: 1510 } },
+      { id: 'CPP', category: 'Resin', name: '복합PP (Compound)', fullName: '복합PP (Compound PP)', hsCode: '3902.30', defaultTonsPerBox: 22, defaultFob: { KR: 1120, CN: 1050, TH: 1095, IN: 1135, US: 1190 } },
+      { id: 'HIPS', category: 'Resin', name: 'HIPS (폴리스티렌)', fullName: 'HIPS (내충격성 폴리스티렌)', hsCode: '3903.19', defaultTonsPerBox: 22, defaultFob: { KR: 1240, CN: 1185, TH: 1220, IN: 1275, US: 1340 } },
+      { id: 'EPS', category: 'Resin', name: 'EPS (발포PS)', fullName: 'EPS (발포 폴리스티렌)', hsCode: '3903.11', defaultTonsPerBox: 17, defaultFob: { KR: 1190, CN: 1130, TH: 1165, IN: 1210, US: 1280 } }
+    ];
+
+    const INITIAL_FREIGHT_BOX = {
+      KR: {
+        KR:     { drewry: 380,  freightos: 410,  cogoport: 390 },
+        CN:     { drewry: 540,  freightos: 580,  cogoport: 520 },
+        IN_NOI: { drewry: 2480, freightos: 2620, cogoport: 2410 },
+        IN_PUN: { drewry: 2320, freightos: 2450, cogoport: 2260 },
+        TH:     { drewry: 1420, freightos: 1510, cogoport: 1380 },
+        ID:     { drewry: 1680, freightos: 1750, cogoport: 1620 },
+        SA:     { drewry: 7450, freightos: 7680, cogoport: 7290 },
+        BR:     { drewry: 8150, freightos: 8450, cogoport: 7980 },
+        EG:     { drewry: 5650, freightos: 5920, cogoport: 5480 },
+        US:     { drewry: 9850, freightos: 10120, cogoport: 9640 },
+        NO:     { drewry: 3780, freightos: 3950, cogoport: 3690 }
+      },
+      CN: {
+        KR:     { drewry: 490,  freightos: 530,  cogoport: 470 },
+        CN:     { drewry: 360,  freightos: 390,  cogoport: 350 },
+        IN_NOI: { drewry: 2340, freightos: 2480, cogoport: 2280 },
+        IN_PUN: { drewry: 2180, freightos: 2310, cogoport: 2120 },
+        TH:     { drewry: 1690, freightos: 1740, cogoport: 1610 },
+        ID:     { drewry: 1850, freightos: 1920, cogoport: 1780 },
+        SA:     { drewry: 7620, freightos: 7850, cogoport: 7440 },
+        BR:     { drewry: 8380, freightos: 8690, cogoport: 8190 },
+        EG:     { drewry: 5780, freightos: 6040, cogoport: 5620 },
+        US:     { drewry: 10220, freightos: 10450, cogoport: 9980 },
+        NO:     { drewry: 3680, freightos: 3840, cogoport: 3590 }
+      },
+      TH: {
+        KR:     { drewry: 1280, freightos: 1350, cogoport: 1240 },
+        CN:     { drewry: 1290, freightos: 1360, cogoport: 1230 },
+        IN_NOI: { drewry: 1790, freightos: 1890, cogoport: 1720 },
+        IN_PUN: { drewry: 1640, freightos: 1730, cogoport: 1580 },
+        TH:     { drewry: 320,  freightos: 350,  cogoport: 310 },
+        ID:     { drewry: 980,  freightos: 1050, cogoport: 940 },
+        SA:     { drewry: 6680, freightos: 6920, cogoport: 6510 },
+        BR:     { drewry: 8620, freightos: 8910, cogoport: 8420 },
+        EG:     { drewry: 5250, freightos: 5520, cogoport: 5100 },
+        US:     { drewry: 10650, freightos: 10920, cogoport: 10380 },
+        NO:     { drewry: 4020, freightos: 4190, cogoport: 3910 }
+      },
+      IN: {
+        KR:     { drewry: 1850, freightos: 1960, cogoport: 1780 },
+        CN:     { drewry: 1820, freightos: 1940, cogoport: 1750 },
+        IN_NOI: { drewry: 480,  freightos: 510,  cogoport: 460 },
+        IN_PUN: { drewry: 360,  freightos: 390,  cogoport: 350 },
+        TH:     { drewry: 1480, freightos: 1560, cogoport: 1410 },
+        ID:     { drewry: 1590, freightos: 1680, cogoport: 1520 },
+        SA:     { drewry: 3180, freightos: 3390, cogoport: 3040 },
+        BR:     { drewry: 7250, freightos: 7540, cogoport: 7080 },
+        EG:     { drewry: 3420, freightos: 3590, cogoport: 3280 },
+        US:     { drewry: 7450, freightos: 7720, cogoport: 7260 },
+        NO:     { drewry: 3290, freightos: 3460, cogoport: 3150 }
+      },
+      US: {
+        KR:     { drewry: 1950, freightos: 2100, cogoport: 1890 },
+        CN:     { drewry: 1980, freightos: 2120, cogoport: 1910 },
+        IN_NOI: { drewry: 2780, freightos: 2940, cogoport: 2660 },
+        IN_PUN: { drewry: 2650, freightos: 2800, cogoport: 2540 },
+        TH:     { drewry: 2350, freightos: 2480, cogoport: 2260 },
+        ID:     { drewry: 2480, freightos: 2620, cogoport: 2390 },
+        SA:     { drewry: 4450, freightos: 4680, cogoport: 4320 },
+        BR:     { drewry: 3680, freightos: 3890, cogoport: 3540 },
+        EG:     { drewry: 3280, freightos: 3450, cogoport: 3160 },
+        US:     { drewry: 580,  freightos: 610,  cogoport: 560 },
+        NO:     { drewry: 1580, freightos: 1690, cogoport: 1510 }
+      }
+    };
+
+    function buildInitialTariffMatrix(krChinaAdRate = 25.75) {
+      const db = {};
+      MATERIALS.forEach(mat => {
+        db[mat.id] = {};
+        const isSteel = mat.category === 'Steel';
+        ORIGINS.forEach(orig => {
+          db[mat.id][orig.id] = {};
+          DESTINATIONS.forEach(dest => {
+            const cCode = dest.countryCode;
+            if (orig.id === cCode) {
+              db[mat.id][orig.id][dest.id] = {
+                mfn: 0.0, fta: 0.0, hasFta: false,
+                ftaName: '내수 조달 (관세 0%)',
+                adCvd: 0.0,
+                note: `동일 국가 내 조달 (${dest.city} 직송, 수입관세 면제)`
+              };
+              return;
+            }
+            let mfn = 0, fta = null, ftaName = '-', adCvd = 0, note = 'WTO/WITS 일반 MFN 세율 적용';
+
+            if (cCode === 'KR') {
+              if (isSteel) {
+                mfn = 0.0; fta = 0.0; ftaName = 'WTO 철강 무관세';
+                if (orig.id === 'CN') {
+                  adCvd = Number(krChinaAdRate);
+                  note = '재정경제부고시 제2026-80호(26.6.12) 중국산 도금·컬러강판 잠정 반덤핑 관세(22.34~33.67%, 기본 25.75%) 부과';
+                } else {
+                  note = '부산항(KRPUS) 통관: WTO 철강 무관세(0%), 반덤핑 미대상';
+                }
+              } else {
+                mfn = 6.5;
+                if (orig.id === 'US') { fta = 0.0; ftaName = '한-미 FTA'; note = 'KORUS 협정세율 0%'; }
+                else if (orig.id === 'TH') { fta = 0.0; ftaName = '한-ASEAN FTA'; note = '한-아세안 FTA 0%'; }
+                else if (orig.id === 'IN') { fta = 0.0; ftaName = '한-인도 CEPA'; note = '한-인도 CEPA 0%'; }
+                else if (orig.id === 'CN') {
+                  fta = (mat.id === 'ABS' || mat.id === 'CPP') ? 3.2 : 0.0;
+                  ftaName = '한-중 FTA / RCEP';
+                  note = '한-중 FTA 및 RCEP 양허세율 적용';
+                }
+              }
+            } else if (cCode === 'CN') {
+              if (isSteel) {
+                mfn = (mat.id === 'GI') ? 5.0 : 4.0;
+                if (orig.id === 'KR' || orig.id === 'TH') {
+                  fta = (orig.id === 'TH') ? 0.0 : 2.5;
+                  ftaName = orig.id === 'TH' ? '중-ASEAN FTA' : 'RCEP 양허';
+                  note = '천진 신강항 통관: RCEP 및 중-아세안 양허세율';
+                } else if (orig.id === 'US') {
+                  adCvd = 25.0; note = '천진 신강항 통관: 대미 보복관세(+25%) 부과';
+                }
+              } else {
+                mfn = 6.5;
+                if (orig.id === 'TH') { fta = 0.0; ftaName = '중-ASEAN FTA'; note = 'ACFTA 합성수지 0% 무관세'; }
+                else if (orig.id === 'KR') { fta = (mat.id === 'EPS' || mat.id === 'HIPS') ? 0.0 : 4.5; ftaName = '한-중 FTA'; note = '한-중 FTA 양허세율'; }
+                else if (orig.id === 'US') { adCvd = 25.0; note = '미·중 보복관세(+25%) 반영'; }
+              }
+            } else if (cCode === 'IN') {
+              const podLabel = dest.id === 'IN_NOI' ? '문드라항➔ICD다드리' : '나바셰바항(푸네)';
+              if (isSteel) {
+                mfn = 11.0;
+                if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인도 CEPA'; note = `${podLabel}: 한-인도 CEPA 철강 0% (BIS 인증 필수)`; }
+                else if (orig.id === 'TH') { fta = 5.0; ftaName = '인도-ASEAN FTA'; note = `${podLabel}: 인도-아세안 FTA 양허세율`; }
+                else if (orig.id === 'CN') { adCvd = 18.5; note = `${podLabel}: 중국산 도금·컬러강판 인도 반덤핑(AD) 부과`; }
+              } else {
+                mfn = 8.25;
+                if (orig.id === 'KR') { fta = (mat.id === 'ABS') ? 0.0 : 2.5; ftaName = '한-인도 CEPA'; note = `${podLabel}: 한-인도 CEPA 수지 양허`; }
+                else if (orig.id === 'TH') { fta = 2.0; ftaName = '인도-ASEAN FTA'; note = `${podLabel}: 인도-아세안 FTA 수지 양허`; }
+              }
+            } else if (cCode === 'TH') {
+              if (isSteel) {
+                mfn = 7.0;
+                if (orig.id === 'CN') { fta = 0.0; ftaName = '중-ASEAN FTA'; adCvd = (mat.id === 'GI') ? 35.5 : 29.8; note = '태국 DFT 중국산 GI/PCM 반덤핑 관세 부과'; }
+                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-ASEAN FTA'; adCvd = (mat.id === 'GI') ? 15.2 : 12.0; note = '한-아세안 0%이나 태국 도금/도장강판 AD 유의'; }
+                else if (orig.id === 'IN') { fta = 2.5; ftaName = '태국-인도 FTA'; note = '태국-인도 FTA 양허 (AD 미대상)'; }
+              } else {
+                mfn = 5.0;
+                if (orig.id === 'KR' || orig.id === 'CN' || orig.id === 'IN') {
+                  fta = 0.0; ftaName = 'ASEAN FTA / RCEP'; note = '아세안 역외 FTA 합성수지 0% 무관세';
+                }
+              }
+            } else if (cCode === 'ID') {
+              if (isSteel) {
+                mfn = 15.0;
+                if (orig.id === 'TH') { fta = 0.0; ftaName = 'ATIGA'; note = '아세안 역내(ATIGA) 0% 무관세 및 AD 미대상'; }
+                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인니 CEPA'; adCvd = 5.5; note = 'IK-CEPA 0% 양허 (세이프가드/SNI 반영)'; }
+                else if (orig.id === 'CN') { fta = 5.0; ftaName = '중-ASEAN FTA'; adCvd = 18.0; note = '인니 KADI 중국산 도금·컬러강판 반덤핑 부과'; }
+                else if (orig.id === 'IN') { fta = 5.0; ftaName = '인도-ASEAN FTA'; adCvd = 5.5; note = '아세안-인도 협정세율 및 세이프가드'; }
+              } else {
+                mfn = 10.0;
+                if (orig.id === 'TH') { fta = 0.0; ftaName = 'ATIGA'; note = 'ATIGA 역내 무관세(0%)'; }
+                else if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인니 CEPA'; note = 'IK-CEPA 합성수지 0%'; }
+                else if (orig.id === 'CN') { fta = 0.0; ftaName = '중-ASEAN FTA'; note = 'ACFTA 0% 양허'; }
+                else if (orig.id === 'IN') { fta = 5.0; ftaName = '인도-ASEAN FTA'; note = '인도-아세안 FTA 양허'; }
+              }
+            } else if (cCode === 'SA') {
+              if (isSteel) {
+                mfn = 10.0;
+                if (orig.id === 'KR') { fta = 5.0; ftaName = '한-GCC FTA'; note = '한-GCC FTA 감축 세율 (5%)'; }
+                else { note = '사우디 철강 관세 10% (인도발 홍해 최단거리 우위)'; }
+              } else {
+                mfn = 5.0;
+                if (orig.id === 'KR') { fta = 0.0; ftaName = '한-GCC FTA'; note = '한-GCC FTA 수지 무관세'; }
+                else { note = 'GCC 공동관세율 5.0%'; }
+              }
+            } else if (cCode === 'BR') {
+              if (isSteel) {
+                mfn = 14.4;
+                if (orig.id === 'CN') { adCvd = (mat.id === 'GI') ? 48.0 : 42.5; note = '브라질 Secex 중국산 GI·PCM 확정 반덤핑 관세 부과'; }
+                else if (orig.id === 'IN') { adCvd = (mat.id === 'PCM') ? 36.0 : 10.6; note = mat.id === 'PCM' ? '브라질 인도산 PCM 확정 반덤핑 부과' : '철강 쿼터/AD 반영'; }
+                else { note = '중국·인도산 AD 미대상 (마나우스 ZFM 감면 시 1.73%)'; }
+              } else {
+                mfn = 12.6;
+                note = 'Mercosur TEC 12.6% (마나우스 ZFM 감면 시 1.51%)';
+              }
+            } else if (cCode === 'US') {
+              if (isSteel) {
+                mfn = 0.0;
+                if (orig.id === 'KR') { fta = 0.0; ftaName = 'KORUS'; adCvd = 55.2; note = '미국 232조 철강관세 50% + 도금강판 AD/CVD(~5.2%)'; }
+                else if (orig.id === 'CN') { adCvd = 125.0; note = '미국 232조(50%) + 301조(25%) + 초고율 AD/CVD'; }
+                else if (orig.id === 'IN') { adCvd = 56.5; note = '미국 232조(50%) + 인도산 도금재 AD/CVD(~6.5%)'; }
+                else if (orig.id === 'TH') { adCvd = 52.5; note = '미국 232조(50%) + 우회수출 조사 리스크'; }
+              } else {
+                mfn = 6.5;
+                if (orig.id === 'KR') { fta = 0.0; ftaName = 'KORUS'; adCvd = 12.5; note = '2026.7 미국 통상법 301조 총 관세 12.5% 상한 적용'; }
+                else if (orig.id === 'CN') { adCvd = 37.5; note = 'MFN 6.5% + 대중국 301조(37.5%) 합산 44.0%'; }
+                else if (orig.id === 'TH') { adCvd = 12.5; note = 'MFN 6.5% + 태국산 301조(+12.5%p) 합산 19.0%'; }
+                else if (orig.id === 'IN') { adCvd = 10.0; note = 'MFN 6.5% + 인도산 301조(+10.0%p) 합산 16.5%'; }
+              }
+            } else if (cCode === 'EG') {
+              const egPort = orig.id === 'US' ? '알렉산드리아항' : '아인소크나항';
+              if (isSteel) {
+                mfn = 12.0;
+                if (orig.id === 'CN') { adCvd = 15.0; note = `${egPort}➔카이로: 기본 12% + 중국산 도금·컬러강판 AD`; }
+                else if (orig.id === 'IN') { adCvd = 5.0; note = `${egPort}➔카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)`; }
+                else { note = `${egPort}➔카이로: 이집트 MFN 기본관세 12%`; }
+              } else {
+                mfn = 5.0; note = `${egPort}➔카이로: 합성수지 MFN 5.0%`;
+              }
+            } else if (cCode === 'NO') {
+              mfn = 0.0; fta = 0.0; ftaName = '노르웨이 무관세';
+              note = '오슬로항(NOOSL): 노르웨이 철강·수지 전 품목 관세 0%';
+            }
+
+            db[mat.id][orig.id][dest.id] = {
+              mfn,
+              fta: fta !== null ? fta : mfn,
+              hasFta: fta !== null && fta < mfn,
+              ftaName,
+              adCvd,
+              note
+            };
+          });
+        });
+      });
+      return db;
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & CALCULATION ENGINE (Supports "없음" / Unavailable Origins!)
+    // =========================================================================
+    let state = {
+      selectedMaterialId: 'GI',
+      priceBasis: 'landed',
+      applyFta: true,
+      applyAdCvd: true,
+      applyManausZfm: false,
+      salesType: 'domestic', // 기본값: 내수(관세·AD 정상 부과)
+      plantZoneType: 'nonbonded', // 기본값: 비보세 일반통관(관세·AD 정상 부과)
+      bondedExemptions: { TH: false, ID: false, IN: false, KR: false, EG: false },
+      includeDomestic: true,
+      krChinaSteelAdPct: 25.75,
+      insuranceRatePct: 0.20,
+      freightMultiplierPct: 100,
+      activeFreightSources: ['drewry', 'freightos', 'cogoport'],
+      selectedDetailOrigin: 'CN',
+      selectedDetailDest: 'KR',
+      fobPrices: {},
+      originAvailable: {}, // { matId: { KR: true, CN: true, TH: true, IN: true, US: true } }
+      tonsPerContainer: {},
+      freightBox: {},
+      customFreightMt: {},
+      tariffs: {}
+    };
+
+    function initAppState() {
+      state.fobPrices = {};
+      state.originAvailable = {};
+      state.tonsPerContainer = {};
+      MATERIALS.forEach(m => {
+        state.fobPrices[m.id] = { ...m.defaultFob };
+        state.originAvailable[m.id] = { KR: true, CN: true, TH: true, IN: true, US: true };
+        state.tonsPerContainer[m.id] = m.defaultTonsPerBox;
+      });
+      state.freightBox = JSON.parse(JSON.stringify(INITIAL_FREIGHT_BOX));
+      state.customFreightMt = {};
+      state.krChinaSteelAdPct = 25.75;
+      state.tariffs = buildInitialTariffMatrix(state.krChinaSteelAdPct);
+      state.insuranceRatePct = 0.20;
+      state.freightMultiplierPct = 100;
+      state.applyManausZfm = false;
+      state.salesType = 'domestic';
+      state.plantZoneType = 'nonbonded';
+      state.bondedExemptions = { TH: false, ID: false, IN: false, KR: false, EG: false };
+      state.activeFreightSources = ['drewry', 'freightos', 'cogoport'];
+    }
+    initAppState();
+
+    function getActiveMaterial() {
+      return MATERIALS.find(m => m.id === state.selectedMaterialId) || MATERIALS[0];
+    }
+
+    function calculateCell(matId, origId, destId) {
+      const destObj = DESTINATIONS.find(d => d.id === destId);
+      const isDomestic = origId === destObj.countryCode;
+      const isAvailable = state.originAvailable[matId] && state.originAvailable[matId][origId] !== false;
+      const fob = Number(state.fobPrices[matId][origId]) || 0;
+      const tons = Number(state.tonsPerContainer[matId]) || 22;
+      const boxRates = state.freightBox[origId][destId];
+      const mult = (Number(state.freightMultiplierPct) || 100) / 100;
+
+      const sources = state.activeFreightSources.length > 0 ? state.activeFreightSources : ['drewry', 'freightos'];
+      let sumBox = 0;
+      sources.forEach(src => { sumBox += (Number(boxRates[src]) || 0) * mult; });
+      const avgBoxFreight = sumBox / sources.length;
+
+      const overrideKey = `${matId}_${origId}_${destId}`;
+      const freightMt = (state.customFreightMt[overrideKey] !== undefined)
+        ? Number(state.customFreightMt[overrideKey])
+        : (avgBoxFreight / tons);
+
+      const inlandMt = isDomestic ? 0 : (Number(destObj.inlandBoxUsd) || 0) / tons;
+      const tInfo = state.tariffs[matId][origId][destId];
+      const rawBaseDuty = (state.applyFta && tInfo.hasFta) ? Number(tInfo.fta) : Number(tInfo.mfn);
+      const rawExtraDuty = state.applyAdCvd ? Number(tInfo.adCvd) : 0;
+
+      // Compute all 4 reference cases for the 2x2 comparison & active selection:
+      // 1) 수출 + 보세 (Export + Bonded Zone / Export License -> 0% duty & 0% AD across bonded export zones)
+      const rateExpBonded = 0.0;
+
+      // 2) 수출 + 비보세 (Export + Non-Bonded General Factory via Duty Drawback -> MFN 0% drawback, but AD/232 remains except KR individual drawback)
+      let expNonBondedExtra = rawExtraDuty;
+      if (!isDomestic) {
+        if (destId === 'KR') expNonBondedExtra = 0.0; // 한국 관세환급특례법 개별환급 가능
+        if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM')) expNonBondedExtra = 0.0;
+      }
+      const rateExpNonBonded = isDomestic ? 0.0 : expNonBondedExtra;
+
+      // 3) 내수 + 보세 (Domestic + Bonded Zone / Free Zone -> Manaus ZFM 88% base reduction, Thailand BOI/DFT appliance AD exemption)
+      let domBondedBase = rawBaseDuty;
+      let domBondedExtra = rawExtraDuty;
+      if (!isDomestic) {
+        if (destId === 'BR') domBondedBase = Number((rawBaseDuty * 0.12).toFixed(2));
+        if (destId === 'TH' && (matId === 'GI' || matId === 'PCM')) domBondedExtra = 0.0;
+      }
+      const rateDomBonded = isDomestic ? 0.0 : Number((domBondedBase + domBondedExtra).toFixed(2));
+
+      // 4) 내수 + 비보세 (Domestic + Non-Bonded General Factory -> 100% standard tariff & AD/CVD applied!)
+      let domNonBondedBase = rawBaseDuty;
+      let domNonBondedExtra = rawExtraDuty;
+      if (!isDomestic) {
+        if (destId === 'BR' && state.applyManausZfm) domNonBondedBase = Number((rawBaseDuty * 0.12).toFixed(2));
+        if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM')) domNonBondedExtra = 0.0;
+      }
+      const rateDomNonBonded = isDomestic ? 0.0 : Number((domNonBondedBase + domNonBondedExtra).toFixed(2));
+      const expBondedAllowed = true;
+
+      // Select active duty rate based on state.salesType ('export'|'domestic') & state.plantZoneType ('bonded'|'nonbonded')
+      let baseDutyPct = rawBaseDuty;
+      let extraDutyPct = rawExtraDuty;
+      let effectiveFtaName = tInfo.ftaName;
+      let effectiveNote = tInfo.note;
+
+      if (isDomestic) {
+        baseDutyPct = 0.0;
+        extraDutyPct = 0.0;
+      } else if (state.salesType === 'export' && state.plantZoneType === 'bonded') {
+        baseDutyPct = expBondedAllowed ? 0.0 : rawBaseDuty;
+        extraDutyPct = expBondedAllowed ? 0.0 : rawExtraDuty;
+        effectiveFtaName = expBondedAllowed ? '수출·보세 (관세·AD 0% 면제)' : tInfo.ftaName;
+        effectiveNote = `[🌐수출 + 🏭보세] 보세구역(Free Zone/보세공장/FTZ) 또는 사전수출면허 반입 후 해외 수출 시 기본관세(${rawBaseDuty}%) 및 반덤핑·특별관세(+${rawExtraDuty}%) 전액 0% 면제`;
+      } else if (state.salesType === 'export' && state.plantZoneType === 'nonbonded') {
+        baseDutyPct = 0.0; // 수출 사후 관세환급(Drawback)
+        extraDutyPct = expNonBondedExtra;
+        if (rawExtraDuty > 0 && expNonBondedExtra > 0) {
+          effectiveFtaName = `수출·비보세 (기본세환급·AD +${expNonBondedExtra}% 부과)`;
+          effectiveNote = `[🌐수출 + 🏢비보세] 비보세 일반공장은 수출 시 기본관세(${rawBaseDuty}%)는 환급(0%)되나, 반덤핑·232조(+${expNonBondedExtra}%)는 일반 Drawback 환급이 불가하여 그대로 부담`;
+        } else if (rawExtraDuty > 0 && expNonBondedExtra === 0) {
+          effectiveFtaName = destId === 'TH' ? '수출·비보세 (태국 가전용 AD면제 0%)' : '수출·비보세 (한국 개별환급 AD 0%)';
+          effectiveNote = destId === 'TH'
+            ? `[🌐수출 + 🏢비보세] 태국 DFT 가전 제조용 실수요자 직권 AD 면제 및 기본관세 환급으로 0% 적용`
+            : `[🌐수출 + 🏢비보세] 한국 관세환급특례법상 수입 시 AD(+${rawExtraDuty}%) 선납 후 수출 소요량 증명(개별환급)으로 사후 환급(0%)`;
+        } else {
+          effectiveFtaName = '수출·비보세 (관세환급 0%)';
+          effectiveNote = `[🌐수출 + 🏢비보세] 완제품 수출 후 사후 관세환급(Duty Drawback)을 통해 기본관세(${rawBaseDuty}%) 0% 환급`;
+        }
+      } else if (state.salesType === 'domestic' && state.plantZoneType === 'bonded') {
+        baseDutyPct = domBondedBase;
+        extraDutyPct = domBondedExtra;
+        if (destId === 'BR' && state.applyManausZfm) {
+          effectiveFtaName = `내수·보세 (마나우스ZFM 기본세88%감면${domBondedExtra > 0 ? '·AD부과' : ''})`;
+          effectiveNote = `[🏠내수 + 🏭보세] 마나우스 자유무역지대(ZFM) 내수 판매 시 기본관세 88% 감면(${rawBaseDuty}%➔${domBondedBase}%), 단 반덤핑(AD +${domBondedExtra}%)은 내수 반출 시 100% 부과`;
+        } else if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM') && rawExtraDuty > 0) {
+          effectiveFtaName = '내수·보세 (태국 DFT 가전용 AD면제)';
+          effectiveNote = `[🏠내수 + 🏭보세] 태국 내수 판매분이라도 DFT 전기·전자(가전) 제조용 직권 예외 및 FTA 적용 시 관세·AD 0%`;
+        } else {
+          effectiveFtaName = `내수·보세 (내수반출 과세 ${(domBondedBase+domBondedExtra).toFixed(1)}%)`;
+          effectiveNote = `[🏠내수 + 🏭보세] 보세구역 공장에서 생산하더라도 현지 내수 시장으로 반출(판매)할 때는 일반 수입관세(${domBondedBase}%)와 반덤핑·232조(+${domBondedExtra}%)가 100% 부과됨`;
+        }
+      } else {
+        // domestic + nonbonded
+        baseDutyPct = domNonBondedBase;
+        extraDutyPct = domNonBondedExtra;
+        effectiveFtaName = `내수·비보세 (일반과세 ${(domNonBondedBase+domNonBondedExtra).toFixed(1)}%)`;
+        effectiveNote = `[🏠내수 + 🏢비보세] 일반 수입통관 후 현지 내수 판매 시 기본관세(${domNonBondedBase}%) 및 반덤핑·232조(+${domNonBondedExtra}%) 100% 부과 (마나우스 ZFM 등 보세특구 감면 미적용)`;
+      }
+
+      const totalDutyPct = Number((baseDutyPct + extraDutyPct).toFixed(2));
+      const isBondedExempted = (rawBaseDuty + rawExtraDuty > totalDutyPct);
+
+      if (!isAvailable) {
+        return {
+          matId, origId, destId, isAvailable: false,
+          fob: null, tons,
+          drewryBox: boxRates.drewry * mult,
+          freightosBox: boxRates.freightos * mult,
+          cogoportBox: boxRates.cogoport * mult,
+          avgBoxFreight, freightMt, inlandMt, insuranceMt: null, cif: null,
+          mfnPct: Number(tInfo.mfn), ftaPct: Number(tInfo.fta), hasFta: tInfo.hasFta,
+          ftaName: effectiveFtaName, isBondedExempted,
+          adCvdPct: Number(tInfo.adCvd),
+          baseDutyPct, extraDutyPct, totalDutyPct, tariffAmount: null,
+          landedCost: null, doorCost: null, totalAddon: null, displayPrice: null,
+          rank: null, diffFromBest: null,
+          note: effectiveNote, isDomestic
+        };
+      }
+
+      const insRate = (Number(state.insuranceRatePct) || 0) / 100;
+      const insuranceMt = isDomestic ? 0 : (fob + freightMt) * 1.1 * insRate;
+      const cif = fob + freightMt + insuranceMt;
+
+      const tariffAmount = cif * (totalDutyPct / 100);
+      const landedCost = cif + tariffAmount;
+      const costExpBonded = cif * (1 + rateExpBonded / 100);
+      const costExpNonBonded = cif * (1 + rateExpNonBonded / 100);
+      const costDomBonded = cif * (1 + rateDomBonded / 100);
+      const costDomNonBonded = cif * (1 + rateDomNonBonded / 100);
+      const doorCost = landedCost + inlandMt;
+      const totalAddon = freightMt + insuranceMt + tariffAmount + (state.priceBasis === 'door' ? inlandMt : 0);
+
+      let displayPrice = landedCost;
+      if (state.priceBasis === 'door') displayPrice = doorCost;
+      else if (state.priceBasis === 'cif') displayPrice = cif;
+      else if (state.priceBasis === 'addon') displayPrice = totalAddon;
+
+      return {
+        matId, origId, destId, isAvailable: true,
+        fob, tons,
+        drewryBox: boxRates.drewry * mult,
+        freightosBox: boxRates.freightos * mult,
+        cogoportBox: boxRates.cogoport * mult,
+        avgBoxFreight, freightMt, inlandMt, insuranceMt, cif,
+        mfnPct: Number(tInfo.mfn), ftaPct: Number(tInfo.fta), hasFta: tInfo.hasFta,
+        ftaName: effectiveFtaName, isBondedExempted,
+        adCvdPct: Number(tInfo.adCvd),
+        baseDutyPct, extraDutyPct, totalDutyPct, tariffAmount,
+        landedCost, rateExpBonded, rateExpNonBonded, rateDomBonded, rateDomNonBonded, costExpBonded, costExpNonBonded, costDomBonded, costDomNonBonded, doorCost, totalAddon, displayPrice,
+        note: effectiveNote, isDomestic
+      };
+    }
+
+    function computeMaterialMatrix(matId) {
+      const cells = {};
+      ORIGINS.forEach(o => {
+        cells[o.id] = {};
+        DESTINATIONS.forEach(d => {
+          cells[o.id][d.id] = calculateCell(matId, o.id, d.id);
+        });
+      });
+
+      const destRankings = {};
+      DESTINATIONS.forEach(d => {
+        const candidates = ORIGINS
+          .filter(o => (state.includeDomestic || o.id !== d.countryCode) && cells[o.id][d.id].isAvailable)
+          .map(o => cells[o.id][d.id])
+          .sort((a, b) => a.displayPrice - b.displayPrice);
+
+        candidates.forEach((c, idx) => {
+          c.rank = idx + 1;
+          c.diffFromBest = c.displayPrice - candidates[0].displayPrice;
+        });
+        destRankings[d.id] = candidates;
+      });
+      return { cells, destRankings };
+    }
+
+    // =========================================================================
+    // 3. FLOATING CURSOR HOVER TOOLTIP ENGINE
+    // =========================================================================
+    const tooltipEl = document.getElementById('hoverTooltipPopup');
+    const tooltipContentEl = document.getElementById('hoverTooltipContent');
+
+    function positionTooltip(e) {
+      if (tooltipEl.classList.contains('hidden')) return;
+      const pad = 16;
+      const rect = tooltipEl.getBoundingClientRect();
+      let left = e.clientX + pad;
+      let top = e.clientY + pad;
+
+      if (left + rect.width > window.innerWidth - 12) {
+        left = e.clientX - rect.width - pad;
+      }
+      if (top + rect.height > window.innerHeight - 12) {
+        top = Math.max(12, window.innerHeight - rect.height - 12);
+      }
+      tooltipEl.style.left = `${left}px`;
+      tooltipEl.style.top = `${top}px`;
+    }
+
+    function showCellHoverPopup(e, matId, origId, destId) {
+      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const c = cells[origId][destId];
+      const origObj = ORIGINS.find(o => o.id === origId);
+      const destObj = DESTINATIONS.find(d => d.id === destId);
+
+      if (!c.isAvailable) {
+        tooltipContentEl.innerHTML = `
+          <div class="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
+            <div>
+              <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · HS ${mat.hsCode}</div>
+              <div class="text-sm font-extrabold text-white mt-0.5">${origObj.flag} ${origObj.name} ➔ ${destObj.flag} ${destObj.name}</div>
+            </div>
+            <span class="bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded-full font-bold text-[10px]">생산업체 없음 (-)</span>
+          </div>
+          <div class="p-3 bg-neutral-900 rounded-xl border border-neutral-800 text-neutral-300 space-y-1.5">
+            <div class="font-bold text-white">🚫 현재 품목(${mat.name})은 ${origObj.name} 생산지 "없음"으로 설정되어 있습니다.</div>
+            <div class="text-[11px] text-neutral-400">• CIF 및 통관 도착가 비교에서 자동 제외되며 매트릭스에 <strong>"-"</strong>로 표시됩니다.</div>
+            <div class="text-[11px] text-neutral-400">• 다시 포함하려면 상단 <strong>상세 설정</strong> 또는 표 좌측에서 <strong>"단가입력"</strong>으로 전환하세요.</div>
+          </div>
+        `;
+        tooltipEl.classList.remove('hidden');
+        positionTooltip(e);
+        return;
+      }
+
+      const best = destRankings[destId][0] || c;
+      const second = destRankings[destId][1] || best;
+
+      const totalForBar = Math.max(1, c.landedCost);
+      const fobPct = Math.round((c.fob / totalForBar) * 100);
+      const frtPct = Math.round(((c.freightMt + c.insuranceMt) / totalForBar) * 100);
+      const taxPct = Math.max(0, 100 - fobPct - frtPct);
+
+      const rankBadgeHtml = c.rank === 1
+        ? `<span class="bg-[#007A5E] text-white px-2 py-0.5 rounded-full font-extrabold text-[10px]">★ 1순위 최적 (2위 대비 -$${(second.displayPrice - best.displayPrice).toFixed(1)})</span>`
+        : `<span class="bg-neutral-700 text-neutral-200 px-2 py-0.5 rounded-full font-bold text-[10px]">${c.rank || '-'}순위 (1위 대비 +$${(c.diffFromBest || 0).toFixed(1)})</span>`;
+
+      tooltipContentEl.innerHTML = `
+        <div class="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
+          <div>
+            <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · HS ${mat.hsCode}</div>
+            <div class="text-sm font-extrabold text-white mt-0.5">${origObj.flag} ${origObj.name} ➔ ${destObj.flag} ${destObj.name}</div>
+          </div>
+          ${rankBadgeHtml}
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] bg-neutral-800/80 px-2.5 py-1.5 rounded-lg">
+          <span class="text-neutral-300">⚓ 기준 도착항(POD): <strong class="text-emerald-300">${destObj.port} (${destObj.locode})</strong></span>
+          <span class="text-neutral-400">${destObj.distanceKm}</span>
+        </div>
+
+        <!-- Mini Visual Stacked Bar -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] text-neutral-400">
+            <span>원가 비중: FOB ${fobPct}%</span>
+            <span>해운·보험 ${frtPct}%</span>
+            <span class="${c.totalDutyPct > 0 ? 'text-[#FF8A9E] font-bold' : ''}">관세 ${taxPct}%</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden flex bg-neutral-800">
+            <div style="width:${fobPct}%" class="bg-neutral-300"></div>
+            <div style="width:${frtPct}%" class="bg-emerald-400"></div>
+            <div style="width:${taxPct}%" class="bg-[#FD312E]"></div>
+          </div>
+        </div>
+
+        <!-- Detailed Cost Breakdown -->
+        <div class="space-y-1 text-[11px] pt-1">
+          <div class="flex justify-between text-neutral-300">
+            <span>① 생산지 FOB 단가</span>
+            <span class="font-mono font-bold text-white">$${c.fob.toFixed(1)} / MT</span>
+          </div>
+          <div class="flex justify-between text-neutral-300">
+            <span>② 평균 해상물류비 (${c.tons}MT/Box)</span>
+            <span class="font-mono font-bold text-emerald-300">+$${c.freightMt.toFixed(1)} / MT</span>
+          </div>
+          <div class="text-[10px] text-neutral-400 font-mono pl-2">
+            └ Drewry $${c.drewryBox.toFixed(0)} · FBX $${c.freightosBox.toFixed(0)} · Cogoport $${c.cogoportBox.toFixed(0)} /Box
+          </div>
+          <div class="flex justify-between text-neutral-300">
+            <span>③ 해상 적하보험 (${state.insuranceRatePct}%)</span>
+            <span class="font-mono text-neutral-300">+$${c.insuranceMt.toFixed(1)} / MT</span>
+          </div>
+          <div class="flex justify-between py-1 px-2 bg-neutral-800 rounded font-bold text-white">
+            <span>④ 기준항 CIF 단가 (①+②+③)</span>
+            <span class="font-mono">$${c.cif.toFixed(1)} / MT</span>
+          </div>
+          <div class="flex justify-between text-neutral-300 pt-0.5">
+            <span>⑤ 실효 관세율 (${c.totalDutyPct.toFixed(2)}%)</span>
+            <span class="font-mono font-bold ${c.totalDutyPct > 15 ? 'text-[#FF8A9E]' : 'text-white'}">+$${c.tariffAmount.toFixed(1)} / MT</span>
+          </div>
+          <div class="text-[10px] text-neutral-400 pl-2">
+            <div>└ 현재 적용: <strong class="text-emerald-300">${c.ftaName}</strong></div>
+          </div>
+          ${!c.isDomestic ? `
+          <div class="mt-1.5 pt-1.5 border-t border-neutral-800">
+            <div class="text-[10px] font-bold text-neutral-300 mb-1">📊 [수출/내수 × 보세/비보세] 4대 조건별 도착가(Landed) 비교</div>
+            <table class="w-full text-[10px] border-collapse font-mono text-center">
+              <thead>
+                <tr class="bg-neutral-800 text-neutral-300">
+                  <th class="py-1 px-1.5 text-left">구분</th>
+                  <th class="py-1 px-1.5">🏭 보세 (특구/면허)</th>
+                  <th class="py-1 px-1.5">🏢 비보세 (일반공장)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-neutral-800">
+                  <td class="py-1 px-1.5 text-left font-sans font-bold text-neutral-300">🌐 수출용</td>
+                  <td class="py-1 px-1.5 ${state.salesType==='export' && state.plantZoneType==='bonded' ? 'bg-[#007A5E]/35 text-emerald-300 font-extrabold ring-1 ring-emerald-400' : 'text-neutral-200'}">$${c.costExpBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateExpBonded.toFixed(1)}%)</span></td>
+                  <td class="py-1 px-1.5 ${state.salesType==='export' && state.plantZoneType==='nonbonded' ? 'bg-[#007A5E]/35 text-emerald-300 font-extrabold ring-1 ring-emerald-400' : 'text-neutral-200'}">$${c.costExpNonBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateExpNonBonded.toFixed(1)}%)</span></td>
+                </tr>
+                <tr>
+                  <td class="py-1 px-1.5 text-left font-sans font-bold text-neutral-300">🏠 내수용</td>
+                  <td class="py-1 px-1.5 ${state.salesType==='domestic' && state.plantZoneType==='bonded' ? 'bg-[#A50034]/40 text-pink-200 font-extrabold ring-1 ring-[#FF8A9E]' : 'text-neutral-200'}">$${c.costDomBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateDomBonded.toFixed(1)}%)</span></td>
+                  <td class="py-1 px-1.5 ${state.salesType==='domestic' && state.plantZoneType==='nonbonded' ? 'bg-[#A50034]/40 text-pink-200 font-extrabold ring-1 ring-[#FF8A9E]' : 'text-neutral-200'}">$${c.costDomNonBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateDomNonBonded.toFixed(1)}%)</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          ` : ''}
+          <div class="flex justify-between py-1.5 px-2.5 bg-[#A50034] text-white rounded-lg font-extrabold text-xs mt-1">
+            <span>⑥ 기준항 통관 도착가 (Landed)</span>
+            <span class="font-mono text-sm">$${c.landedCost.toFixed(1)} / MT</span>
+          </div>
+          <div class="flex justify-between text-[10px] text-neutral-400 pt-0.5 px-1">
+            <span>⑦ [참고] 공장 입고가 (내륙운송 +$${c.inlandMt.toFixed(1)}/MT 포함)</span>
+            <span class="font-mono font-bold text-neutral-200">$${c.doorCost.toFixed(1)} / MT</span>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-neutral-300 bg-neutral-900/90 border border-neutral-800 p-2 rounded-lg leading-snug">
+          <strong class="text-[#FF8A9E]">📌 통관 근거:</strong> ${c.note}
+        </div>
+      `;
+
+      tooltipEl.classList.remove('hidden');
+      positionTooltip(e);
+    }
+
+    function showDestinationRankingPopup(e, matId, destId) {
+      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const destObj = DESTINATIONS.find(d => d.id === destId);
+      const ranked = destRankings[destId];
+      const unavailable = ORIGINS.filter(o => !cells[o.id][destId].isAvailable);
+
+      if (ranked.length === 0) {
+        tooltipContentEl.innerHTML = `<div class="p-2 text-neutral-300">모든 생산지가 "없음"으로 설정되어 있습니다.</div>`;
+        tooltipEl.classList.remove('hidden');
+        positionTooltip(e);
+        return;
+      }
+
+      const best = ranked[0];
+      const second = ranked[1] || best;
+      const savings = second.displayPrice - best.displayPrice;
+
+      let rowsHtml = ranked.map(r => {
+        const o = ORIGINS.find(orig => orig.id === r.origId);
+        const isFirst = r.rank === 1;
+        return `
+          <tr class="${isFirst ? 'bg-[#007A5E]/25 text-white font-bold' : 'text-neutral-300'} border-b border-neutral-800/80">
+            <td class="py-1 px-1.5">${isFirst ? '★1위' : r.rank + '위'}</td>
+            <td class="py-1 px-1.5">${o.flag} ${o.name}</td>
+            <td class="py-1 px-1.5 text-right font-mono">$${r.cif.toFixed(0)}</td>
+            <td class="py-1 px-1.5 text-right font-mono ${r.totalDutyPct > 15 ? 'text-[#FF8A9E]' : ''}">${r.totalDutyPct.toFixed(1)}%</td>
+            <td class="py-1 px-1.5 text-right font-mono font-extrabold ${isFirst ? 'text-emerald-300' : ''}">$${r.displayPrice.toFixed(1)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      unavailable.forEach(o => {
+        rowsHtml += `
+          <tr class="text-neutral-500 border-b border-neutral-800/50">
+            <td class="py-1 px-1.5 font-mono">-</td>
+            <td class="py-1 px-1.5">${o.flag} ${o.name} <span class="text-[9px] text-neutral-500">(없음)</span></td>
+            <td class="py-1 px-1.5 text-right font-mono">-</td>
+            <td class="py-1 px-1.5 text-right font-mono">-</td>
+            <td class="py-1 px-1.5 text-right font-mono font-bold">-</td>
+          </tr>
+        `;
+      });
+
+      tooltipContentEl.innerHTML = `
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
+          <div>
+            <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · 거점별 순위 비교</div>
+            <div class="text-sm font-extrabold text-white mt-0.5">${destObj.flag} ${destObj.name} — ⚓ ${destObj.port}</div>
+          </div>
+          <span class="bg-[#007A5E] text-white px-2 py-0.5 rounded-full font-extrabold text-[10px]">2위 대비 -$${savings.toFixed(1)}</span>
+        </div>
+
+        <table class="w-full text-left border-collapse text-[11px]">
+          <thead>
+            <tr class="text-neutral-400 border-b border-neutral-700">
+              <th class="py-1 px-1.5">순위</th>
+              <th class="py-1 px-1.5">출발지</th>
+              <th class="py-1 px-1.5 text-right">CIF</th>
+              <th class="py-1 px-1.5 text-right">관세율</th>
+              <th class="py-1 px-1.5 text-right">도착가($/MT)</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+
+        <div class="text-[10px] text-neutral-300 bg-neutral-900 border border-neutral-800 p-2 rounded-lg leading-snug">
+          <strong class="text-emerald-300">⚓ 물류 경로:</strong> ${destObj.portNote}
+        </div>
+      `;
+
+      tooltipEl.classList.remove('hidden');
+      positionTooltip(e);
+    }
+
+    function hideHoverPopup() {
+      tooltipEl.classList.add('hidden');
+    }
+
+    // =========================================================================
+    // 4. UI RENDERING FUNCTIONS
+    // =========================================================================
+    let comparisonChart = null;
+
+    function showToast(msg) {
+      const el = document.getElementById('toastNotice');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.add('hidden'), 2600);
+    }
+
+    function renderMaterialSelector() {
+      const group = document.getElementById('materialBtnGroup');
+      group.innerHTML = '';
+      const activeMat = getActiveMaterial();
+
+      document.getElementById('activeHsBadge').textContent = `HS ${activeMat.hsCode}`;
+      document.getElementById('quickStripMatBadge').textContent = `${activeMat.fullName} (HS ${activeMat.hsCode})`;
+      document.getElementById('tariffTabMaterialName').textContent = `${activeMat.fullName} · HS ${activeMat.hsCode}`;
+      document.getElementById('inputContainerTons').value = state.tonsPerContainer[activeMat.id];
+
+      MATERIALS.forEach(m => {
+        const isSelected = m.id === state.selectedMaterialId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = isSelected
+          ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition flex items-center gap-1'
+          : 'px-3 py-1 rounded-full text-xs font-semibold bg-[#F4F3EF] hover:bg-[#E7E5DE] text-neutral-800 border border-[#E4E2DC] transition flex items-center gap-1';
+        btn.innerHTML = `<span>${m.name}</span>`;
+        btn.addEventListener('click', () => {
+          state.selectedMaterialId = m.id;
+          renderAll();
+        });
+        group.appendChild(btn);
+      });
+    }
+
+    // Render FOB Input Cards in Detailed Settings with explicit "단가입력 / 없음" Selector!
+    function renderFobInputs() {
+      const grid = document.getElementById('fobInputGrid');
+      grid.innerHTML = '';
+      const matId = state.selectedMaterialId;
+      const fobs = state.fobPrices[matId];
+      const avail = state.originAvailable[matId];
+
+      ORIGINS.forEach(orig => {
+        const isAvail = avail[orig.id] !== false;
+        const val = fobs[orig.id];
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border transition ${isAvail ? 'bg-[#FAF9F6] border-[#E4E2DC]' : 'bg-neutral-100 border-neutral-300 opacity-85'} flex flex-col justify-between gap-2`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs font-extrabold ${isAvail ? 'text-neutral-900' : 'text-neutral-400 line-through'}">${orig.flag} ${orig.name}</span>
+            <select
+              data-avail-select="${orig.id}"
+              class="text-[11px] font-bold rounded-md px-1.5 py-0.5 border focus:outline-none cursor-pointer ${isAvail ? 'bg-white text-neutral-800 border-neutral-300' : 'bg-neutral-800 text-white border-neutral-800'}"
+              title="${orig.name} 생산업체 유무 선택"
+            >
+              <option value="available" ${isAvail ? 'selected' : ''}>단가입력</option>
+              <option value="none" ${!isAvail ? 'selected' : ''}>없음 (-)</option>
+            </select>
+          </div>
+          ${isAvail ? `
+            <div class="flex items-center justify-between bg-white border border-neutral-300 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-[#A50034]">
+              <span class="text-[11px] font-mono text-neutral-400">FOB $</span>
+              <input type="number" step="5" min="1" data-orig="${orig.id}" value="${val}" class="fob-input w-20 text-xs font-mono font-extrabold text-neutral-900 text-right focus:outline-none bg-transparent" />
+              <span class="text-[10px] font-mono text-neutral-400">/MT</span>
+            </div>
+          ` : `
+            <div class="flex items-center justify-center bg-neutral-200/70 border border-dashed border-neutral-300 rounded-lg px-2 py-1 text-xs font-mono font-bold text-neutral-500 select-none">
+              - (생산업체 없음)
+            </div>
+          `}
+        `;
+        grid.appendChild(card);
+      });
+
+      // Availability dropdown listener ("단가입력" vs "없음 (-)")
+      grid.querySelectorAll('[data-avail-select]').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const oId = e.target.getAttribute('data-avail-select');
+          const mode = e.target.value;
+          const activeCount = ORIGINS.filter(o => state.originAvailable[matId][o.id] !== false).length;
+          if (mode === 'none' && activeCount <= 1) {
+            e.target.value = 'available';
+            showToast('최소 1개 이상의 생산 국가는 활성화되어 있어야 비교가 가능합니다.');
+            return;
+          }
+          state.originAvailable[matId][oId] = (mode === 'available');
+          renderAll();
+          const origName = ORIGINS.find(o => o.id === oId).name;
+          showToast(mode === 'none'
+            ? `${getActiveMaterial().name} — ${origName} 생산지를 "없음(-)"으로 설정했습니다.`
+            : `${getActiveMaterial().name} — ${origName} 생산지 FOB 단가를 다시 반영합니다.`);
+        });
+      });
+
+      // FOB numeric input listener
+      grid.querySelectorAll('.fob-input').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const oId = e.target.getAttribute('data-orig');
+          const num = parseFloat(e.target.value);
+          if (!isNaN(num) && num > 0) {
+            state.fobPrices[state.selectedMaterialId][oId] = num;
+            renderMatrixAndKpis();
+            renderChart();
+            renderAllMaterialsSummary();
+          }
+        });
+      });
+    }
+
+    function renderMatrixAndKpis() {
+      const mat = getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+
+      // 1. Update 4 Headline KPIs
+      let sumBest = 0, sumSavings = 0, validDestCount = 0;
+      const winCounts = { KR: 0, CN: 0, TH: 0, IN: 0, US: 0 };
+
+      DESTINATIONS.forEach(d => {
+        const ranked = destRankings[d.id];
+        if (ranked && ranked.length > 0) {
+          validDestCount++;
+          const best = ranked[0];
+          const second = ranked[1] || best;
+          sumBest += best.displayPrice;
+          sumSavings += (second.displayPrice - best.displayPrice);
+          winCounts[best.origId] = (winCounts[best.origId] || 0) + 1;
+        }
+      });
+
+      const avgBest = validDestCount > 0 ? (sumBest / validDestCount) : 0;
+      const avgSavings = validDestCount > 0 ? (sumSavings / validDestCount) : 0;
+
+      let topOrigId = 'KR', topCount = -1;
+      Object.entries(winCounts).forEach(([k, v]) => {
+        if (v > topCount) { topCount = v; topOrigId = k; }
+      });
+      const topOrigObj = ORIGINS.find(o => o.id === topOrigId);
+
+      // Korea KPI card
+      const krRanked = destRankings['KR'];
+      const krBest = krRanked && krRanked[0];
+      const krSecond = (krRanked && krRanked[1]) || krBest;
+
+      let riskCount = 0;
+      let activeOriginCount = 0;
+      ORIGINS.forEach(o => {
+        if (state.originAvailable[mat.id][o.id] !== false) {
+          activeOriginCount++;
+          DESTINATIONS.forEach(d => {
+            if (cells[o.id][d.id].adCvdPct > 0) riskCount++;
+          });
+        }
+      });
+
+      document.getElementById('kpiAvgBestPrice').textContent = validDestCount > 0 ? `$${avgBest.toFixed(0)}` : '-';
+      document.getElementById('kpiAvgBestSub').textContent = `2순위 대비 평균 -$${avgSavings.toFixed(0)}/MT 절감`;
+      document.getElementById('kpiTopOrigin').textContent = topCount > 0 ? `${topOrigObj.flag} ${topOrigObj.name}산` : '-';
+      document.getElementById('kpiTopOriginCount').textContent = `11개 중 ${Math.max(0, topCount)}개 거점 1위`;
+
+      if (krBest) {
+        const krBestOrig = ORIGINS.find(o => o.id === krBest.origId);
+        document.getElementById('kpiKoreaBest').textContent = `${krBestOrig.flag} ${krBestOrig.name} $${krBest.displayPrice.toFixed(0)}`;
+        document.getElementById('kpiKoreaDiff').textContent = `2위(${krSecond.origId}) 대비 -$${(krSecond.displayPrice - krBest.displayPrice).toFixed(0)}`;
+        const cnKrCell = cells['CN']['KR'];
+        document.getElementById('kpiKoreaSub').textContent = !cnKrCell.isAvailable
+          ? '중국 생산지 "없음(-)" 설정됨'
+          : (mat.category === 'Steel'
+              ? `중국산 AD +${state.krChinaSteelAdPct}% 반영 시 $${cnKrCell.displayPrice.toFixed(0)}/MT`
+              : `한-중 FTA (${cnKrCell.totalDutyPct}%) 및 근거리 해운 반영`);
+      }
+
+      document.getElementById('kpiTradeRiskCount').textContent = `${riskCount}개 구간`;
+      document.getElementById('kpiActiveOriginsBadge').textContent = `생산국 ${activeOriginCount}개 활성`;
+
+      // 2. Render 11-Destination Quick Winner Strip
+      const quickGrid = document.getElementById('quickDestCardsGrid');
+      quickGrid.innerHTML = '';
+      DESTINATIONS.forEach(d => {
+        const ranked = destRankings[d.id];
+        const best = ranked[0];
+        const second = ranked[1] || best;
+        const isSelectedDest = state.selectedDetailDest === d.id;
+
+        const card = document.createElement('div');
+        card.className = `quick-dest-card cursor-pointer rounded-xl p-2.5 border ${isSelectedDest ? 'bg-[#FDF2F5] border-[#A50034]' : 'bg-[#FAF9F6] border-[#E4E2DC]'} flex flex-col justify-between`;
+
+        if (!best) {
+          card.innerHTML = `
+            <div class="text-[11px] font-bold text-neutral-700">${d.flag} ${d.shortName}</div>
+            <div class="my-2 text-center font-mono font-bold text-neutral-400">-</div>
+            <div class="text-[10px] text-neutral-400 text-center">생산지 없음</div>
+          `;
+        } else {
+          const origObj = ORIGINS.find(o => o.id === best.origId);
+          const diff = second.displayPrice - best.displayPrice;
+          card.innerHTML = `
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] font-bold text-neutral-700 truncate">${d.flag} ${d.shortName}</span>
+              <span class="text-[9px] font-mono text-neutral-400">${d.locode.split('➔')[0]}</span>
+            </div>
+            <div class="my-1.5">
+              <div class="text-xs font-extrabold text-[#007A5E] flex items-center gap-0.5">
+                <span>${origObj.flag} ${origObj.name}</span>
+              </div>
+              <div class="text-base font-black text-neutral-900 font-mono leading-tight mt-0.5">$${best.displayPrice.toFixed(0)}</div>
+            </div>
+            <div class="text-[10px] font-bold text-[#A50034] bg-white/80 rounded px-1.5 py-0.5 border border-[#EBE9E2] truncate">
+              ${ranked.length > 1 ? `2위(${second.origId}) -${diff.toFixed(0)}$` : '단독 소싱'}
+            </div>
+          `;
+        }
+
+        card.addEventListener('mouseenter', (e) => showDestinationRankingPopup(e, mat.id, d.id));
+        card.addEventListener('mousemove', positionTooltip);
+        card.addEventListener('mouseleave', hideHoverPopup);
+        card.addEventListener('click', () => {
+          state.selectedDetailDest = d.id;
+          document.getElementById('selectChartDest').value = d.id;
+          renderMatrixAndKpis();
+          renderChart();
+        });
+        quickGrid.appendChild(card);
+      });
+
+      // 3. Render Clean 5x11 Matrix Header
+      const headerRow = document.getElementById('matrixHeaderRow');
+      headerRow.innerHTML = `
+        <th class="py-3 px-3 font-extrabold text-neutral-900 bg-[#EAE8E1] sticky left-0 z-10 min-w-[190px]">
+          출발지 (FOB 수정 · 없음 선택)
+        </th>
+      ` + DESTINATIONS.map(d => `
+        <th class="py-2.5 px-2 text-center font-extrabold text-neutral-900 min-w-[88px] cursor-pointer hover:bg-[#E4E2DC] transition" data-dest-col="${d.id}">
+          <div class="text-xs">${d.flag} ${d.shortName}</div>
+          <div class="text-[10px] font-mono text-neutral-500 font-normal">${d.locode.split('➔')[0]}</div>
+        </th>
+      `).join('');
+
+      headerRow.querySelectorAll('[data-dest-col]').forEach(th => {
+        const dId = th.getAttribute('data-dest-col');
+        th.addEventListener('mouseenter', (e) => showDestinationRankingPopup(e, mat.id, dId));
+        th.addEventListener('mousemove', positionTooltip);
+        th.addEventListener('mouseleave', hideHoverPopup);
+      });
+
+      // 4. Render 5x11 Matrix Body (Shows "-" when Origin is set to "없음"!)
+      const tbody = document.getElementById('matrixTableBody');
+      tbody.innerHTML = '';
+
+      ORIGINS.forEach(o => {
+        const tr = document.createElement('tr');
+        const isAvail = state.originAvailable[mat.id][o.id] !== false;
+        const fobVal = state.fobPrices[mat.id][o.id];
+
+        let rowHtml = `
+          <td class="py-2.5 px-3 font-bold ${isAvail ? 'text-neutral-900 bg-[#FAF9F6]' : 'text-neutral-400 bg-neutral-100'} sticky left-0 z-10 border-r border-[#E4E2DC]">
+            <div class="flex items-center justify-between gap-1.5">
+              <span class="text-xs font-extrabold ${!isAvail ? 'line-through text-neutral-400' : ''}">${o.flag} ${o.name}</span>
+              <div class="flex items-center gap-1">
+                ${isAvail ? `
+                  <div class="flex items-center bg-white border border-neutral-300 rounded-md px-1.5 py-0.5 focus-within:ring-2 focus-within:ring-[#A50034]">
+                    <span class="text-[10px] text-neutral-400 font-mono">$</span>
+                    <input type="number" step="5" data-inline-fob="${o.id}" value="${fobVal}" class="inline-fob-input w-13 text-right font-mono font-extrabold text-xs text-[#A50034] focus:outline-none bg-transparent" title="클릭하여 ${o.name} FOB 단가 직접 수정" />
+                  </div>
+                  <button type="button" data-toggle-none="${o.id}" class="text-[10px] bg-neutral-200 hover:bg-neutral-800 hover:text-white text-neutral-700 px-1.5 py-0.5 rounded font-bold transition" title="${o.name} 생산업체 '없음(-)'으로 전환">없음</button>
+                ` : `
+                  <span class="text-[11px] font-mono font-bold text-neutral-400 px-1.5">없음 (-)</span>
+                  <button type="button" data-toggle-none="${o.id}" class="text-[10px] bg-[#A50034] hover:bg-[#8A002B] text-white px-2 py-0.5 rounded font-bold transition" title="${o.name} FOB 단가 다시 활성화">입력</button>
+                `}
+              </div>
+            </div>
+          </td>
+        `;
+
+        DESTINATIONS.forEach(d => {
+          const c = cells[o.id][d.id];
+          const isExcludedDomestic = !state.includeDomestic && c.isDomestic;
+
+          // If origin is marked "없음" (Unavailable), render clean "-" across all CIF/Landed cells!
+          if (!c.isAvailable) {
+            rowHtml += `
+              <td
+                data-orig="${o.id}"
+                data-dest="${d.id}"
+                class="matrix-cell py-3 px-2 text-center cursor-pointer border-r border-[#F0EFEA] bg-neutral-100/75 text-neutral-400"
+              >
+                <div class="font-mono font-bold text-base text-neutral-400 select-none">-</div>
+              </td>
+            `;
+            return;
+          }
+
+          let cellBg = 'bg-white hover:bg-[#FAF9F6]';
+          let topBadge = '';
+          let priceColor = 'text-neutral-900 font-bold';
+          let subText = '';
+
+          if (isExcludedDomestic) {
+            cellBg = 'bg-neutral-100 text-neutral-400';
+            topBadge = `<span class="text-[9px] text-neutral-400">내수제외</span>`;
+            priceColor = 'text-neutral-400';
+            subText = `-`;
+          } else if (c.rank === 1) {
+            cellBg = 'bg-[#E6F4F0] hover:bg-[#D5EDE6]';
+            topBadge = `<span class="inline-block text-[10px] font-extrabold bg-[#007A5E] text-white px-1.5 py-0.2 rounded">★ 1위</span>`;
+            priceColor = 'text-[#00664E] font-black text-base';
+            subText = `<span class="text-[10px] font-bold text-[#007A5E]">최저가</span>`;
+          } else if (c.rank === 2) {
+            cellBg = 'bg-[#F4F3EF] hover:bg-[#EAE8E1]';
+            topBadge = `<span class="inline-block text-[10px] font-bold bg-neutral-700 text-white px-1.5 py-0.2 rounded">2위</span>`;
+            priceColor = 'text-neutral-800 font-extrabold text-sm';
+            subText = `<span class="text-[10px] font-mono text-neutral-500">+$${c.diffFromBest.toFixed(0)}</span>`;
+          } else if (c.extraDutyPct >= 15) {
+            cellBg = 'bg-[#FDF2F5]/70 hover:bg-[#FCE8EE]';
+            topBadge = `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#A50034]"><span class="w-1.5 h-1.5 rounded-full bg-[#A50034]"></span>AD주의</span>`;
+            priceColor = 'text-[#A50034] font-bold text-sm';
+            subText = `<span class="text-[10px] font-mono text-[#A50034]/80">+$${c.diffFromBest.toFixed(0)}</span>`;
+          } else {
+            topBadge = `<span class="text-[10px] text-neutral-400">${c.rank}위</span>`;
+            priceColor = 'text-neutral-700 font-semibold text-sm';
+            subText = `<span class="text-[10px] font-mono text-neutral-400">+$${c.diffFromBest.toFixed(0)}</span>`;
+          }
+
+          rowHtml += `
+            <td
+              data-orig="${o.id}"
+              data-dest="${d.id}"
+              class="matrix-cell py-2.5 px-2 text-center cursor-pointer border-r border-[#F0EFEA] ${cellBg}"
+            >
+              <div class="flex items-center justify-center mb-0.5">${topBadge}</div>
+              <div class="font-mono ${priceColor}">$${c.displayPrice.toFixed(0)}</div>
+              <div class="mt-0.5">${subText}</div>
+            </td>
+          `;
+        });
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
+
+      // Inline FOB input listener
+      tbody.querySelectorAll('.inline-fob-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const oId = e.target.getAttribute('data-inline-fob');
+          const num = parseFloat(e.target.value);
+          if (!isNaN(num) && num > 0) {
+            state.fobPrices[state.selectedMaterialId][oId] = num;
+            renderFobInputs();
+            renderMatrixAndKpis();
+            renderChart();
+            renderAllMaterialsSummary();
+            showToast(`${oId} FOB 단가가 $${num}/MT로 반영되었습니다.`);
+          }
+        });
+      });
+
+      // Inline "없음 / 입력" toggle button listener in Matrix Left Column
+      tbody.querySelectorAll('[data-toggle-none]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const oId = btn.getAttribute('data-toggle-none');
+          const curAvail = state.originAvailable[mat.id][oId] !== false;
+          const activeCount = ORIGINS.filter(o => state.originAvailable[mat.id][o.id] !== false).length;
+          if (curAvail && activeCount <= 1) {
+            showToast('최소 1개 이상의 생산 국가는 활성화되어 있어야 비교가 가능합니다.');
+            return;
+          }
+          state.originAvailable[mat.id][oId] = !curAvail;
+          renderAll();
+          const origName = ORIGINS.find(o => o.id === oId).name;
+          showToast(!curAvail
+            ? `${mat.name} — ${origName} 생산지 FOB 단가를 다시 반영합니다.`
+            : `${mat.name} — ${origName} 생산지를 "없음(-)"으로 설정했습니다.`);
+        });
+      });
+
+      // Attach Hover Popup & Click events to the 55 matrix cells
+      tbody.querySelectorAll('.matrix-cell').forEach(td => {
+        const oId = td.getAttribute('data-orig');
+        const dId = td.getAttribute('data-dest');
+        td.addEventListener('mouseenter', (e) => showCellHoverPopup(e, mat.id, oId, dId));
+        td.addEventListener('mousemove', positionTooltip);
+        td.addEventListener('mouseleave', hideHoverPopup);
+        td.addEventListener('click', () => {
+          state.selectedDetailOrigin = oId;
+          state.selectedDetailDest = dId;
+          document.getElementById('selectChartDest').value = dId;
+          renderChart();
+        });
+      });
+    }
+
+    function renderChart() {
+      const mat = getActiveMaterial();
+      const { cells } = computeMaterialMatrix(mat.id);
+      const destObj = DESTINATIONS.find(d => d.id === state.selectedDetailDest) || DESTINATIONS[0];
+
+      document.getElementById('chartDestTitle').textContent = `${destObj.flag} ${destObj.name} [${destObj.port}] — 5대 생산지별 원가 구조 비교 (${mat.fullName}, USD/MT)`;
+
+      const labels = ORIGINS.map(o => {
+        const c = cells[o.id][destObj.id];
+        return c.isAvailable ? `${o.flag} ${o.name} ($${c.displayPrice.toFixed(0)})` : `${o.flag} ${o.name} (없음 -)`;
+      });
+      const fobData = ORIGINS.map(o => {
+        const c = cells[o.id][destObj.id];
+        return c.isAvailable ? Number(c.fob.toFixed(1)) : 0;
+      });
+      const freightInsData = ORIGINS.map(o => {
+        const c = cells[o.id][destObj.id];
+        if (!c.isAvailable) return 0;
+        const addInland = state.priceBasis === 'door' ? c.inlandMt : 0;
+        return Number((c.freightMt + c.insuranceMt + addInland).toFixed(1));
+      });
+      const tariffData = ORIGINS.map(o => {
+        const c = cells[o.id][destObj.id];
+        return c.isAvailable ? Number(c.tariffAmount.toFixed(1)) : 0;
+      });
+
+      const ctx = document.getElementById('destComparisonChart').getContext('2d');
+      if (comparisonChart) comparisonChart.destroy();
+
+      comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '생산지 FOB ($/MT)', data: fobData, backgroundColor: '#262626', borderRadius: 5 },
+            { label: '인근항 해상물류비 + 보험 ($/MT)', data: freightInsData, backgroundColor: '#007A5E', borderRadius: 5 },
+            { label: '관세 + 무역구제 AD/232조 ($/MT)', data: tariffData, backgroundColor: '#A50034', borderRadius: 5 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: "'Pretendard', sans-serif", size: 11, weight: '600' } } }
+          },
+          scales: {
+            x: { stacked: true, ticks: { font: { family: "'Pretendard', sans-serif", weight: 'bold' } } },
+            y: { stacked: true, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderAllMaterialsSummary() {
+      const tbody = document.getElementById('allMaterialsSummaryBody');
+      tbody.innerHTML = '';
+
+      const allMatrices = {};
+      MATERIALS.forEach(m => { allMatrices[m.id] = computeMaterialMatrix(m.id); });
+
+      DESTINATIONS.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#FAF9F6]';
+
+        let html = `
+          <td class="py-2.5 px-3.5 font-bold text-neutral-900 bg-[#FAF9F6] whitespace-nowrap">
+            <div>${d.flag} ${d.name}</div>
+            <div class="text-[10px] font-semibold text-[#A50034]">⚓ ${d.port} (${d.locode})</div>
+          </td>
+        `;
+
+        MATERIALS.forEach(m => {
+          const ranked = allMatrices[m.id].destRankings[d.id];
+          const best = ranked[0];
+          const second = ranked[1] || best;
+
+          if (!best) {
+            html += `<td class="py-2.5 px-2 text-center border-l border-[#EBE9E2] font-mono text-neutral-400 font-bold">-</td>`;
+            return;
+          }
+
+          const origObj = ORIGINS.find(o => o.id === best.origId);
+          const diff = second.displayPrice - best.displayPrice;
+
+          html += `
+            <td
+              data-sum-mat="${m.id}"
+              data-sum-orig="${best.origId}"
+              data-sum-dest="${d.id}"
+              class="summary-hover-cell py-2.5 px-2 text-center border-l border-[#EBE9E2] cursor-pointer hover:bg-[#FDF2F5] transition"
+            >
+              <div class="inline-flex items-center gap-1 font-extrabold text-[#007A5E] bg-[#E6F4F0] px-2 py-0.5 rounded-full text-xs">
+                ${origObj.flag} ${origObj.name}
+              </div>
+              <div class="font-mono font-black text-neutral-900 text-sm mt-1">$${best.displayPrice.toFixed(0)}</div>
+              <div class="text-[10px] text-[#A50034] font-bold">${ranked.length > 1 ? `2위 대비 -$${diff.toFixed(0)}` : '단독 소싱'}</div>
+            </td>
+          `;
+        });
+
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll('.summary-hover-cell').forEach(td => {
+        const mId = td.getAttribute('data-sum-mat');
+        const oId = td.getAttribute('data-sum-orig');
+        const dId = td.getAttribute('data-sum-dest');
+        td.addEventListener('mouseenter', (e) => showCellHoverPopup(e, mId, oId, dId));
+        td.addEventListener('mousemove', positionTooltip);
+        td.addEventListener('mouseleave', hideHoverPopup);
+      });
+    }
+
+    function renderPortMappingGuide() {
+      const tbody = document.getElementById('portGuideTableBody');
+      const tons = Number(state.tonsPerContainer[state.selectedMaterialId]) || 24;
+      tbody.innerHTML = DESTINATIONS.map(d => {
+        const inlandMt = (d.inlandBoxUsd / tons).toFixed(1);
+        return `
+          <tr class="hover:bg-neutral-800/60">
+            <td class="py-2 px-2.5 font-semibold text-white whitespace-nowrap">${d.flag} ${d.name}</td>
+            <td class="py-2 px-2.5 font-bold text-[#FF8A9E] whitespace-nowrap">${d.city}</td>
+            <td class="py-2 px-2.5 font-mono text-emerald-300 whitespace-nowrap">${d.port} [${d.locode}]</td>
+            <td class="py-2 px-2.5 text-right font-mono text-neutral-300 whitespace-nowrap">${d.distanceKm}</td>
+            <td class="py-2 px-2.5 text-right font-mono text-neutral-300 whitespace-nowrap">+$${d.inlandBoxUsd}/Box (~$${inlandMt}/MT)</td>
+            <td class="py-2 px-2.5 text-neutral-300">${d.portNote}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderFreightTab() {
+      const mat = getActiveMaterial();
+      const { cells } = computeMaterialMatrix(mat.id);
+      const tbody = document.getElementById('freightDetailTableBody');
+      tbody.innerHTML = '';
+
+      ORIGINS.forEach(o => {
+        DESTINATIONS.forEach(d => {
+          const c = cells[o.id][d.id];
+          const overrideKey = `${mat.id}_${o.id}_${d.id}`;
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-[#FAF9F6]';
+          tr.innerHTML = `
+            <td class="py-2 px-3 font-semibold text-neutral-800 whitespace-nowrap">${o.flag} ${o.name}</td>
+            <td class="py-2 px-3 font-semibold text-neutral-800 whitespace-nowrap">${d.flag} ${d.name}</td>
+            <td class="py-2 px-3 text-neutral-600">${o.shortPort} ➔ <strong>${d.port}</strong> [${d.locode}]</td>
+            <td class="py-2 px-3 text-right font-mono">$${c.drewryBox.toFixed(0)}</td>
+            <td class="py-2 px-3 text-right font-mono">$${c.freightosBox.toFixed(0)}</td>
+            <td class="py-2 px-3 text-right font-mono">$${c.cogoportBox.toFixed(0)}</td>
+            <td class="py-2 px-3 text-right font-mono font-bold bg-[#FAF9F6]">$${c.avgBoxFreight.toFixed(0)}</td>
+            <td class="py-2 px-3 text-right bg-[#FDF2F5]/50">
+              <input type="number" step="1" data-key="${overrideKey}" value="${c.freightMt.toFixed(1)}" class="freight-mt-input w-20 text-right font-mono font-bold text-xs bg-white border border-neutral-300 rounded px-1.5 py-0.5" />
+            </td>
+            <td class="py-2 px-3 text-right font-mono text-neutral-500">+$${c.inlandMt.toFixed(1)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+
+      tbody.querySelectorAll('.freight-mt-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const key = e.target.getAttribute('data-key');
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val >= 0) {
+            state.customFreightMt[key] = val;
+            renderAll();
+            showToast('사용자 지정 톤당 해상물류비가 반영되었습니다.');
+          }
+        });
+      });
+    }
+
+    function renderTariffTab() {
+      const mat = getActiveMaterial();
+      const { cells } = computeMaterialMatrix(mat.id);
+      const tbody = document.getElementById('tariffDetailTableBody');
+      tbody.innerHTML = '';
+
+      ORIGINS.forEach(o => {
+        DESTINATIONS.forEach(d => {
+          const c = cells[o.id][d.id];
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-[#FAF9F6]';
+          tr.innerHTML = `
+            <td class="py-2 px-3 font-semibold whitespace-nowrap">${o.flag} ${o.name}</td>
+            <td class="py-2 px-3 font-semibold whitespace-nowrap">${d.flag} ${d.name}</td>
+            <td class="py-2 px-3 text-right font-mono">${c.mfnPct}%</td>
+            <td class="py-2 px-3 text-right font-mono">${c.ftaPct}%</td>
+            <td class="py-2 px-3 text-neutral-600">${c.ftaName}</td>
+            <td class="py-2 px-3 text-right font-mono ${c.adCvdPct > 0 ? 'text-[#A50034] font-bold' : ''}">+${c.adCvdPct}%</td>
+            <td class="py-2 px-3 text-right font-mono font-bold ${c.totalDutyPct > 15 ? 'text-[#A50034] bg-[#FDF2F5]' : 'bg-[#F4F3EF]'}">${c.totalDutyPct.toFixed(2)}%</td>
+            <td class="py-2 px-3 text-neutral-500">${c.note}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function downloadCsvRows(filename, rows) {
+      const csvContent = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportOceanFreightRawDataCsv() {
+      const rows = [['구간ID', '출발지', '선적항(POL)', '도착거점', '기준도착항(POD)', 'LOCODE', 'Drewry($/Box)', 'Freightos($/Box)', 'Cogoport($/Box)', '평균운임($/Box)', 'Steel_24MT($/MT)', 'Resin_22MT($/MT)', 'EPS_17MT($/MT)', '내륙운송($/Box)']];
+      ORIGINS.forEach(o => {
+        DESTINATIONS.forEach(d => {
+          const box = state.freightBox[o.id][d.id];
+          const avg = (box.drewry + box.freightos + box.cogoport) / 3;
+          rows.push([`${o.id}->${d.id}`, o.name, o.port, d.name, d.port, d.locode, box.drewry, box.freightos, box.cogoport, avg.toFixed(1), (avg/24).toFixed(1), (avg/22).toFixed(1), (avg/17).toFixed(1), d.inlandBoxUsd]);
+        });
+      });
+      downloadCsvRows('ocean_freight_raw_data_55_routes_2026.csv', rows);
+      showToast('해상물류비 Raw Data (55개 항로) CSV 다운로드 완료');
+    }
+
+    function exportTariffRawDataCsv() {
+      const rows = [['품목코드', '원재료명', 'HS_Code', '출발지', '도착거점', '기준항(POD)', 'MFN(%)', 'FTA(%)', '적용협정', 'AD_CVD_232_301(%)', '실효관세율(%)', '근거']];
+      MATERIALS.forEach(mat => {
+        ORIGINS.forEach(o => {
+          DESTINATIONS.forEach(d => {
+            const t = state.tariffs[mat.id][o.id][d.id];
+            const base = t.hasFta ? Number(t.fta) : Number(t.mfn);
+            rows.push([mat.id, mat.fullName, mat.hsCode, o.name, d.name, d.port, t.mfn, t.fta, t.ftaName, t.adCvd, (base + Number(t.adCvd)).toFixed(2), t.note]);
+          });
+        });
+      });
+      downloadCsvRows('tariff_ad_cvd_raw_data_330_routes_2026.csv', rows);
+      showToast('전 품목(330개 구간) 관세 Raw Data CSV 다운로드 완료');
+    }
+
+    function populateDestDropdown() {
+      const sel = document.getElementById('selectChartDest');
+      sel.innerHTML = DESTINATIONS.map(d => `<option value="${d.id}">${d.flag} ${d.name} — ${d.port}</option>`).join('');
+      sel.value = state.selectedDetailDest;
+      sel.addEventListener('change', (e) => {
+        state.selectedDetailDest = e.target.value;
+        renderMatrixAndKpis();
+        renderChart();
+      });
+    }
+
+    function renderAll() {
+      renderPortMappingGuide();
+      renderMaterialSelector();
+      renderFobInputs();
+      renderMatrixAndKpis();
+      renderChart();
+      renderAllMaterialsSummary();
+      renderFreightTab();
+      renderTariffTab();
+    }
+
+    function setupEventListeners() {
+      // Port Modal
+      const portModal = document.getElementById('portGuideModal');
+      document.getElementById('btnOpenPortModal').addEventListener('click', () => portModal.classList.remove('hidden'));
+      document.getElementById('btnClosePortModal').addEventListener('click', () => portModal.classList.add('hidden'));
+      portModal.addEventListener('click', (e) => { if (e.target === portModal) portModal.classList.add('hidden'); });
+
+      // Settings Drawer
+      const drawer = document.getElementById('settingsDrawer');
+      const drawerBtn = document.getElementById('btnToggleSettingsDrawer');
+      drawerBtn.addEventListener('click', () => {
+        const isHidden = drawer.classList.toggle('hidden');
+        drawerBtn.textContent = isHidden ? '⚙️ 상세 설정 · FOB 키인(없음 설정) ▼' : '⚙️ 상세 설정 · FOB 키인(없음 설정) ▲';
+      });
+
+      // Download Dropdown
+      const dlMenu = document.getElementById('downloadDropdownMenu');
+      document.getElementById('btnDownloadMenuToggle').addEventListener('click', (e) => {
+        e.stopPropagation();
+        dlMenu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', () => dlMenu.classList.add('hidden'));
+
+      // Tabs
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetTab = btn.getAttribute('data-tab');
+          document.querySelectorAll('.nav-tab-btn').forEach(b => {
+            b.className = 'nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition';
+          });
+          btn.className = 'nav-tab-btn px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-[#FD312E] text-white whitespace-nowrap transition';
+
+          document.getElementById('tabPanelMatrix').classList.toggle('hidden', targetTab !== 'matrix');
+          document.getElementById('tabPanelSummary').classList.toggle('hidden', targetTab !== 'summary');
+          document.getElementById('tabPanelFreight').classList.toggle('hidden', targetTab !== 'freight');
+          document.getElementById('tabPanelTariff').classList.toggle('hidden', targetTab !== 'tariff');
+        });
+      });
+
+      document.getElementById('selectPriceBasis').addEventListener('change', (e) => {
+        state.priceBasis = e.target.value;
+        renderAll();
+      });
+
+      function updateModeButtonsUI() {
+        const isExp = state.salesType === 'export';
+        const isBond = state.plantZoneType === 'bonded';
+        document.getElementById('btnSalesExport').className = isExp
+          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition'
+          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
+        document.getElementById('btnSalesDomestic').className = !isExp
+          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition'
+          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
+
+        document.getElementById('btnZoneBonded').className = isBond
+          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition'
+          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
+        document.getElementById('btnZoneNonBonded').className = !isBond
+          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition'
+          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
+      }
+
+      document.getElementById('btnSalesExport').addEventListener('click', () => {
+        state.salesType = 'export';
+        updateModeButtonsUI();
+        renderAll();
+        showToast(`🌐 [수출용 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}] 기준으로 매트릭스가 전환되었습니다.`);
+      });
+      document.getElementById('btnSalesDomestic').addEventListener('click', () => {
+        state.salesType = 'domestic';
+        updateModeButtonsUI();
+        renderAll();
+        showToast(`🏠 [내수용 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}] 기준으로 매트릭스가 전환되었습니다.`);
+      });
+      document.getElementById('btnZoneBonded').addEventListener('click', () => {
+        state.plantZoneType = 'bonded';
+        state.applyManausZfm = true;
+        state.bondedExemptions = { TH: true, ID: true, IN: true, KR: true, EG: true };
+        document.getElementById('chkManausZfm').checked = true;
+        document.getElementById('chkThailandBondedExemption').checked = true;
+        ['TH', 'ID', 'IN', 'KR', 'EG'].forEach(k => {
+          const el = document.getElementById('chkBonded' + k);
+          if (el) el.checked = true;
+        });
+        updateModeButtonsUI();
+        renderAll();
+        showToast(`🏭 [${state.salesType === 'export' ? '수출용' : '내수용'} · 보세(특구/수출면허)] 기준으로 전환되었습니다.`);
+      });
+      document.getElementById('btnZoneNonBonded').addEventListener('click', () => {
+        state.plantZoneType = 'nonbonded';
+        state.applyManausZfm = false;
+        state.bondedExemptions = { TH: false, ID: false, IN: false, KR: false, EG: false };
+        document.getElementById('chkManausZfm').checked = false;
+        document.getElementById('chkThailandBondedExemption').checked = false;
+        ['TH', 'ID', 'IN', 'KR', 'EG'].forEach(k => {
+          const el = document.getElementById('chkBonded' + k);
+          if (el) el.checked = false;
+        });
+        updateModeButtonsUI();
+        renderAll();
+        showToast(`🏢 [${state.salesType === 'export' ? '수출용' : '내수용'} · 비보세(일반 과세)] 기준으로 전환되었습니다.`);
+      });
+
+      document.getElementById('selectKrChinaSteelAd').addEventListener('change', (e) => {
+        const rate = parseFloat(e.target.value) || 0;
+        state.krChinaSteelAdPct = rate;
+        ['GI', 'PCM'].forEach(mId => {
+          if (state.tariffs[mId] && state.tariffs[mId].CN && state.tariffs[mId].CN.KR) {
+            state.tariffs[mId].CN.KR.adCvd = rate;
+          }
+        });
+        renderAll();
+        showToast(`한국 수입 중국산 도금·컬러강판 반덤핑 관세율 ${rate}% 반영 완료`);
+      });
+
+      document.getElementById('chkManausZfm').addEventListener('change', (e) => {
+        state.applyManausZfm = e.target.checked;
+        renderAll();
+        showToast(state.applyManausZfm
+          ? '브라질 마나우스 ZFM 기본관세 88% 감면 적용 (반덤핑 관세는 미면제)'
+          : '브라질 일반 Mercosur 관세 기준으로 전환되었습니다.');
+      });
+
+      const syncThailandBonded = (checked) => {
+        state.bondedExemptions.TH = checked;
+        document.getElementById('chkThailandBondedExemption').checked = checked;
+        document.getElementById('chkBondedTH').checked = checked;
+        renderAll();
+        showToast(checked
+          ? '태국 법인 보세(BOI Sec.36)·가전 제조용 철강 반덤핑(AD) 0% 면제가 적용되었습니다.'
+          : '태국 일반 내수 수입통관(중국·한국산 철강 AD 부과) 기준으로 전환되었습니다.');
+      };
+      document.getElementById('chkThailandBondedExemption').addEventListener('change', (e) => syncThailandBonded(e.target.checked));
+      document.getElementById('chkBondedTH').addEventListener('change', (e) => syncThailandBonded(e.target.checked));
+
+      ['ID', 'IN', 'KR', 'EG'].forEach(codeKey => {
+        const el = document.getElementById('chkBonded' + codeKey);
+        if (el) {
+          el.addEventListener('change', (e) => {
+            state.bondedExemptions[codeKey] = e.target.checked;
+            renderAll();
+            showToast(`${codeKey} 거점 보세구역·수출용 원재료 AD/관세 면제 설정이 ${e.target.checked ? '적용' : '해제'}되었습니다.`);
+          });
+        }
+      });
+      document.getElementById('chkApplyFta').addEventListener('change', (e) => {
+        state.applyFta = e.target.checked;
+        renderAll();
+      });
+      document.getElementById('chkApplyAdCvd').addEventListener('change', (e) => {
+        state.applyAdCvd = e.target.checked;
+        renderAll();
+      });
+      document.getElementById('chkIncludeDomestic').addEventListener('change', (e) => {
+        state.includeDomestic = e.target.checked;
+        renderAll();
+      });
+
+      // Presets
+      document.getElementById('presetBase').addEventListener('click', () => {
+        const mat = getActiveMaterial();
+        state.fobPrices[mat.id] = { ...mat.defaultFob };
+        state.originAvailable[mat.id] = { KR: true, CN: true, TH: true, IN: true, US: true };
+        renderAll();
+        showToast('2026 Q4 시장 기준 FOB 단가가 적용되었습니다.');
+      });
+      document.getElementById('presetChinaDrop').addEventListener('click', () => {
+        const mat = getActiveMaterial();
+        state.fobPrices[mat.id] = { ...mat.defaultFob, CN: Math.round(mat.defaultFob.CN * 0.90) };
+        renderAll();
+        showToast('중국 FOB -10% 시나리오가 적용되었습니다.');
+      });
+      document.getElementById('presetEqualFob').addEventListener('click', () => {
+        const mat = getActiveMaterial();
+        const base = mat.defaultFob.KR;
+        state.fobPrices[mat.id] = { KR: base, CN: base, TH: base, IN: base, US: base };
+        renderAll();
+        showToast('동일 FOB 시나리오가 적용되었습니다.');
+      });
+      document.getElementById('btnResetDefaults').addEventListener('click', () => {
+        initAppState();
+        document.getElementById('selectPriceBasis').value = 'landed';
+        updateModeButtonsUI();
+        document.getElementById('selectKrChinaSteelAd').value = '25.75';
+        document.getElementById('chkManausZfm').checked = false;
+        document.getElementById('chkThailandBondedExemption').checked = false;
+        document.getElementById('chkBondedTH').checked = false;
+        ['ID', 'IN', 'KR', 'EG'].forEach(k => {
+          const el = document.getElementById('chkBonded' + k);
+          if (el) el.checked = false;
+        });
+        renderAll();
+        showToast('모든 품목의 FOB 단가 및 생산지 유무 설정이 초기화되었습니다.');
+      });
+
+      // Exports (reflecting "-" for unavailable origins!)
+      document.getElementById('btnExportFreightRawCsv').addEventListener('click', exportOceanFreightRawDataCsv);
+      document.getElementById('btnExportFreightTabCsv').addEventListener('click', exportOceanFreightRawDataCsv);
+      document.getElementById('btnExportTariffRawCsv').addEventListener('click', exportTariffRawDataCsv);
+      document.getElementById('btnExportTariffTabCsv').addEventListener('click', exportTariffRawDataCsv);
+      document.getElementById('btnExportCsv').addEventListener('click', () => {
+        const mat = getActiveMaterial();
+        const { cells } = computeMaterialMatrix(mat.id);
+        const rows = [['품목', 'HS_Code', '출발지', '도착거점', '기준도착항(POD)', 'FOB($/MT)', '해운비($/MT)', '보험료($/MT)', 'CIF($/MT)', '실효관세율(%)', '관세액($/MT)', '통관도착가_Landed($/MT)', '공장입고가_Door($/MT)', '순위']];
+        ORIGINS.forEach(o => {
+          DESTINATIONS.forEach(d => {
+            const c = cells[o.id][d.id];
+            if (!c.isAvailable) {
+              rows.push([mat.fullName, mat.hsCode, `${o.name} (없음)`, d.name, d.port, '-', '-', '-', '-', '-', '-', '-', '-', '-']);
+            } else {
+              rows.push([mat.fullName, mat.hsCode, o.name, d.name, d.port, c.fob.toFixed(1), c.freightMt.toFixed(1), c.insuranceMt.toFixed(1), c.cif.toFixed(1), c.totalDutyPct.toFixed(2), c.tariffAmount.toFixed(1), c.landedCost.toFixed(1), c.doorCost.toFixed(1), c.rank || '-']);
+            }
+          });
+        });
+        downloadCsvRows(`global_sourcing_matrix_${mat.id}_2026.csv`, rows);
+        showToast(`${mat.fullName} 매트릭스 CSV 다운로드 완료`);
+      });
+    }
+
+    function bootDashboard() {
+      try {
+        populateDestDropdown();
+        setupEventListeners();
+        renderAll();
+      } catch (err) {
+        console.error("Dashboard boot error:", err);
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootDashboard);
+    } else {
+      bootDashboard();
+    }
+  })();
+  </script>
+</body>
+</html>
