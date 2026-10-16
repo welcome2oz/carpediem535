@@ -3,626 +3,913 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>글로벌 원재료 최적 소싱처 분석 대시보드 (3-Second Executive View)</title>
+  <meta name="color-scheme" content="light" />
+  <title>Sourcing — 글로벌 원재료 소싱 리포트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Noto+Serif+KR:wght@400;600;700;900&display=swap" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            lgred: {
-              DEFAULT: '#A50034',
-              light: '#FDF2F5',
-              soft: '#F9D8E2',
-              hover: '#8A002B',
-              active: '#FD312E'
-            },
-            lgdark: {
-              DEFAULT: '#111111',
-              card: '#1C1C1E',
-              muted: '#2C2C2E'
-            },
-            lgwarm: {
-              bg: '#F4F3EF',
-              surface: '#FAF9F6',
-              border: '#E4E2DC'
-            }
-          },
-          fontFamily: {
-            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            mono: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'Arial', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
   <style>
+    /* ------------------------------------------------------------------
+       Design tokens — paper, ink, one accent. Everything else is type.
+       ------------------------------------------------------------------ */
     :root {
-      --lg-heritage-red: #A50034;
-      --lg-active-red: #FD312E;
-      --lg-warm-bg: #F4F3EF;
-      --lg-charcoal: #111111;
+      --paper: #F3EFE7;
+      --paper-2: #E9E3D6;
+      --card: #FBF9F4;
+      --ink: #141312;
+      --ink-2: #3A3633;
+      --mute: #7A736A;
+      --faint: #B8B0A3;
+      --rule: #D8D0C2;
+      --accent: #A50034;
+      --accent-soft: #F1E1E4;
+      --taupe: #B9AE98;
+
+      --serif-en: 'Bodoni Moda', 'Didot', 'Bodoni 72', 'Times New Roman', serif;
+      --serif-ko: 'Noto Serif KR', 'Nanum Myeongjo', 'AppleMyungjo', serif;
+      --sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Helvetica Neue', Arial, sans-serif;
+
+      --wrap: 1320px;
+      --gutter: 40px;
     }
+    @media (max-width: 900px) { :root { --gutter: 24px; } }
+    @media (max-width: 640px) { :root { --gutter: 16px; } }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-      background-color: var(--lg-warm-bg);
-      color: var(--lg-charcoal);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.015em;
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums lining-nums;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
-    .font-mono {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-      font-variant-numeric: tabular-nums;
+    button, input, select { font: inherit; color: inherit; letter-spacing: inherit; }
+    button { cursor: pointer; background: none; border: 0; padding: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .hidden { display: none !important; }
+    .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+
+    /* Type primitives */
+    .eyebrow {
+      font: 600 10.5px/1.3 var(--sans);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin: 0;
     }
-    .lg-card {
-      background-color: #FFFFFF;
-      border: 1px solid #E4E2DC;
-      border-radius: 16px;
-      box-shadow: 0 2px 10px rgba(17, 17, 17, 0.03);
+    .eyebrow.is-accent { color: var(--accent); }
+    .italic-en { font-family: var(--serif-en); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+    .num { font-variant-numeric: tabular-nums lining-nums; }
+
+    /* ------------------------------------------------------------------
+       Masthead
+       ------------------------------------------------------------------ */
+    .topline {
+      white-space: nowrap;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding-top: 14px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--ink);
     }
-    .lg-brand-gradient {
-      background: linear-gradient(135deg, #A50034 0%, #C40452 60%, #FD312E 100%);
+    .topline .eyebrow { color: var(--ink-2); }
+    .utility { display: flex; align-items: center; gap: 22px; }
+    .link-btn {
+      white-space: nowrap;
+      font: 600 11px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink); padding: 6px 0; border-bottom: 1px solid transparent;
     }
-    .matrix-cell {
-      transition: all 0.14s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
+    .link-btn:hover { border-bottom-color: var(--ink); }
+    .ink-btn {
+      font: 600 11px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase;
+      background: var(--ink); color: var(--paper); padding: 9px 14px;
     }
-    .matrix-cell:hover {
-      transform: translateY(-2px);
-      z-index: 20;
-      box-shadow: 0 8px 20px rgba(165, 0, 52, 0.14);
+    .ink-btn:hover { background: var(--accent); }
+    .dl { position: relative; }
+    .menu {
+      position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: 270px;
+      background: var(--card); border: 1px solid var(--ink); padding: 6px 0;
+      box-shadow: 0 18px 40px -18px rgba(20, 19, 18, 0.35);
     }
-    .quick-dest-card {
-      transition: all 0.15s ease;
+    .menu button {
+      display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 10px;
+      padding: 10px 16px; text-align: left; font-size: 13px;
     }
-    .quick-dest-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(17, 17, 17, 0.08);
-      border-color: #A50034;
+    .menu button:hover { background: var(--paper-2); }
+    .menu small { color: var(--mute); font-size: 11px; }
+
+    .nameplate {
+      display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 32px;
+      padding-top: 18px; padding-bottom: 0;
     }
+    .logo {
+      margin: 0;
+      font-family: var(--serif-en);
+      font-weight: 500;
+      font-size: clamp(56px, 9.2vw, 128px);
+      line-height: 0.82;
+      letter-spacing: -0.035em;
+      font-variation-settings: 'opsz' 96;
+      padding-bottom: 0.3em;
+    }
+    .nameplate-deck { justify-self: end; text-align: right; max-width: 420px; padding-bottom: 6px; }
+    .nameplate-deck p { margin: 0; }
+    .nameplate-deck .ko { font-family: var(--serif-ko); font-weight: 600; font-size: 17px; letter-spacing: -0.03em; }
+    .nameplate-deck .meta { margin-top: 6px; color: var(--mute); font-size: 12px; }
+    @media (max-width: 760px) {
+      .nameplate { grid-template-columns: 1fr; gap: 10px; }
+      .nameplate-deck { justify-self: start; text-align: left; }
+      .topline .hide-sm { display: none; }
+      .hide-xs { display: none; }
+      .utility { gap: 14px; }
+    }
+
+    .sections-bar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(243, 239, 231, 0.94);
+      backdrop-filter: saturate(140%) blur(6px);
+      -webkit-backdrop-filter: saturate(140%) blur(6px);
+      border-top: 3px double var(--ink);
+      border-bottom: 1px solid var(--ink);
+    }
+    .sections { display: flex; gap: 34px; overflow-x: auto; scrollbar-width: none; }
+    .sections::-webkit-scrollbar { display: none; }
+    .nav-tab-btn {
+      display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap;
+      padding: 13px 0 11px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+      font-size: 13px; font-weight: 500; color: var(--mute);
+    }
+    .nav-tab-btn .n { font-family: var(--serif-en); font-style: italic; font-size: 14px; color: var(--faint); }
+    .nav-tab-btn:hover { color: var(--ink); }
+    .nav-tab-btn.is-active { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+    .nav-tab-btn.is-active .n { color: var(--accent); }
+
+    /* ------------------------------------------------------------------
+       Control strip — material + three switches, nothing more
+       ------------------------------------------------------------------ */
+    .controls {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px 40px;
+      padding-top: 26px; padding-bottom: 18px;
+    }
+    .materials { display: flex; flex-wrap: wrap; gap: 14px 40px; }
+    .mat-group { display: flex; flex-direction: column; gap: 6px; }
+    .mat-row { display: flex; gap: 20px; }
+    .mat-btn {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+      padding-bottom: 4px; border-bottom: 2px solid transparent; color: #A39A8C;
+      transition: color .15s ease;
+    }
+    .mat-btn:hover { color: var(--ink-2); }
+    .mat-btn .code { font-family: var(--serif-en); font-size: 30px; line-height: 1; font-weight: 500; letter-spacing: -0.02em; }
+    .mat-btn .ko { font-size: 11px; font-weight: 500; letter-spacing: 0; }
+    .mat-btn.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+    .mat-btn.is-active .code { font-style: italic; }
+
+    .switches { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 26px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .select {
+      appearance: none; -webkit-appearance: none;
+      background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23141312'/%3E%3C/svg%3E") no-repeat right 2px center;
+      border: 0; border-bottom: 1px solid var(--ink); border-radius: 0;
+      padding: 4px 20px 5px 0; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .seg { display: inline-flex; border: 1px solid var(--ink); }
+    .seg button { padding: 6px 13px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+    .seg button + button { border-left: 1px solid var(--ink); }
+    .seg button:hover { background: var(--paper-2); }
+    .seg button.is-on { background: var(--ink); color: var(--paper); font-weight: 600; }
+    .seg-sm button { padding: 3px 9px; font-size: 11.5px; }
+
+    .condition {
+      margin: 0; padding: 10px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+      font-size: 12px; color: var(--mute);
+    }
+    .condition b { color: var(--ink); font-weight: 600; }
+
+    /* ------------------------------------------------------------------
+       Cover story
+       ------------------------------------------------------------------ */
+    .cover {
+      display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 56px;
+      padding-top: 48px; padding-bottom: 40px; align-items: end;
+    }
+    .headline {
+      margin: 14px 0 0;
+      font-family: var(--serif-ko);
+      font-weight: 700;
+      font-size: clamp(34px, 4.6vw, 64px);
+      line-height: 1.14;
+      letter-spacing: -0.055em;
+      word-break: keep-all;
+    }
+    .headline .hl { color: var(--accent); }
+    .deck {
+      margin: 20px 0 0; max-width: 620px;
+      font-size: 16px; line-height: 1.7; color: var(--ink-2); word-break: keep-all;
+    }
+    .cover-figure { border-left: 1px solid var(--ink); padding-left: 32px; }
+    .bignum {
+      font-family: var(--serif-en);
+      font-weight: 500;
+      font-size: clamp(76px, 10vw, 150px);
+      line-height: 0.88;
+      letter-spacing: -0.045em;
+      margin: 14px 0 12px;
+      font-variation-settings: 'opsz' 96;
+    }
+    .bignum .cur { font-size: 0.42em; vertical-align: 0.95em; margin-right: 0.04em; letter-spacing: 0; }
+    .caption { margin: 0; font-size: 12.5px; color: var(--mute); }
+    @media (max-width: 900px) {
+      .cover { grid-template-columns: 1fr; gap: 28px; padding-top: 32px; }
+      .cover-figure { border-left: 0; border-top: 1px solid var(--ink); padding-left: 0; padding-top: 18px; }
+    }
+
+    .figures {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
+    }
+    .fig { padding: 18px 22px 20px; border-left: 1px solid var(--rule); min-width: 0; }
+    .fig:first-child { border-left: 0; padding-left: 0; }
+    .fig-val {
+      margin: 10px 0 6px; font-family: var(--serif-en); font-weight: 500;
+      font-size: clamp(30px, 3vw, 42px); line-height: 1; letter-spacing: -0.03em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fig-val small { font-family: var(--sans); font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--mute); margin-left: 4px; }
+    .fig-sub { margin: 0; font-size: 12px; color: var(--mute); line-height: 1.5; word-break: keep-all; }
+    .fig-sub b { color: var(--ink-2); font-weight: 600; }
+    @media (max-width: 900px) {
+      .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fig:nth-child(3) { border-left: 0; padding-left: 0; }
+      .fig:nth-child(n+3) { border-top: 1px solid var(--rule); }
+    }
+
+    /* ------------------------------------------------------------------
+       Editorial blocks
+       ------------------------------------------------------------------ */
+    .block { padding-top: 64px; }
+    .block-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 24px;
+      padding-bottom: 14px; border-bottom: 1px solid var(--ink); margin-bottom: 4px;
+    }
+    .block-title { display: flex; align-items: baseline; gap: 16px; margin: 0; font-weight: 400; }
+    .block-num { font-family: var(--serif-en); font-style: italic; font-size: 15px; color: var(--accent); }
+    .block-title .en { font-family: var(--serif-en); font-style: italic; font-size: clamp(26px, 2.6vw, 36px); letter-spacing: -0.02em; line-height: 1; }
+    .block-title .ko { font-family: var(--serif-ko); font-weight: 600; font-size: 16px; letter-spacing: -0.03em; color: var(--ink-2); }
+    .block-note { margin: 0; font-size: 12px; color: var(--mute); }
+    .block-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
+
+    /* Line-up (table-of-contents style) */
+    .lineup {
+      list-style: none; margin: 0; padding: 0;
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 56px;
+    }
+    .lu-item {
+      display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; align-items: baseline; gap: 4px 16px;
+      padding: 15px 8px 13px 0; border-bottom: 1px solid var(--rule); cursor: pointer;
+      transition: background .15s ease;
+    }
+    .lu-item:hover { background: var(--paper-2); }
+    .lu-item.is-sel { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10px; }
+    .lu-idx { font-family: var(--serif-en); font-style: italic; color: var(--faint); font-size: 14px; }
+    .lu-dest { min-width: 0; }
+    .lu-dest strong { font-family: var(--serif-ko); font-weight: 600; font-size: 18px; letter-spacing: -0.03em; }
+    .lu-dest span { margin-left: 8px; font-size: 10.5px; letter-spacing: 0.12em; color: var(--mute); }
+    .lu-win { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; text-align: right; }
+    .lu-win b { font-weight: 700; letter-spacing: 0.08em; margin-right: 5px; }
+    .lu-price { font-family: var(--serif-en); font-size: 26px; font-weight: 500; letter-spacing: -0.025em; line-height: 1; min-width: 92px; text-align: right; }
+    .lu-gap { grid-column: 2 / -1; font-size: 11.5px; color: var(--mute); }
+    @media (max-width: 900px) { .lineup { grid-template-columns: 1fr; } }
+
+    /* Matrix */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .matrix { width: 100%; border-collapse: collapse; min-width: 980px; }
+    .matrix th, .matrix td { padding: 0; }
+    .matrix thead th {
+      padding: 14px 6px 12px; text-align: center; font-weight: 400; vertical-align: bottom;
+      border-bottom: 1px solid var(--ink); cursor: default;
+    }
+    .matrix thead th .d-name { display: block; font-family: var(--serif-ko); font-weight: 600; font-size: 14px; letter-spacing: -0.03em; }
+    .matrix thead th .d-code { display: block; font-size: 9.5px; letter-spacing: 0.12em; color: var(--mute); margin-top: 2px; }
+    .matrix thead th.corner { text-align: left; padding-left: 0; }
+    .matrix .row-head {
+      position: sticky; left: 0; z-index: 2; background: var(--paper);
+      text-align: left; font-weight: 400; padding: 16px 18px 14px 0; white-space: nowrap;
+      border-right: 1px solid var(--rule); min-width: 168px;
+    }
+    @media (max-width: 640px) {
+      .matrix .row-head { min-width: 104px; padding-right: 10px; }
+      .row-head .name { font-size: 14px; }
+    }
+    .row-head .code { font-weight: 700; letter-spacing: 0.1em; font-size: 12px; margin-right: 8px; }
+    .row-head .name { font-family: var(--serif-ko); font-weight: 600; font-size: 15px; letter-spacing: -0.03em; }
+    .row-head .fob { display: block; margin-top: 2px; font-size: 11px; color: var(--mute); }
+    .row-head.is-off .name, .row-head.is-off .code { color: var(--faint); text-decoration: line-through; }
+    .matrix tbody tr { border-bottom: 1px solid var(--rule); }
+    .matrix tbody tr:last-child { border-bottom: 1px solid var(--ink); }
+    .cell {
+      text-align: center; font-size: 15px; font-weight: 500; color: #6A645C;
+      padding: 16px 4px 14px !important; cursor: pointer; position: relative;
+      transition: background .12s ease;
+    }
+    .cell:hover { background: var(--paper-2); }
+    .cell.is-col-sel { background: rgba(233, 227, 214, 0.55); }
+    .cell.r1 { background: var(--ink); color: var(--paper); font-weight: 700; box-shadow: inset 1px 0 0 var(--paper), inset -1px 0 0 var(--paper); }
+    .cell.r1:hover { background: #2B2825; }
+    .cell.r2 { color: var(--ink); font-weight: 600; }
+    .cell.r2 span { border-bottom: 1px solid var(--ink); padding-bottom: 1px; }
+    .cell.risk { color: var(--accent); font-weight: 600; }
+    .cell.off { color: var(--faint); font-weight: 400; }
+    .matrix thead th.is-col-sel { box-shadow: inset 0 -3px 0 var(--accent); }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 11.5px; color: var(--mute); align-items: center; }
+    .legend i { display: inline-block; vertical-align: -1px; margin-right: 6px; }
+    .lg-r1 { width: 12px; height: 12px; background: var(--ink); }
+    .lg-r2 { width: 14px; height: 0; border-bottom: 1px solid var(--ink); vertical-align: 3px !important; }
+    .lg-risk { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    /* Anatomy */
+    .anatomy { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 48px; padding-top: 24px; }
+    .chart-box { position: relative; height: 320px; }
+    .reading { border-left: 1px solid var(--rule); padding-left: 32px; }
+    .reading-lead { margin: 12px 0 18px; font-family: var(--serif-ko); font-weight: 600; font-size: 24px; line-height: 1.35; letter-spacing: -0.045em; word-break: keep-all; }
+    .reading-lead .hl { color: var(--accent); }
+    .ledger { margin: 0; }
+    .ledger div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+    .ledger dt { color: var(--ink-2); }
+    .ledger dd { margin: 0; font-weight: 600; }
+    .ledger .swatch { display: inline-block; width: 9px; height: 9px; margin-right: 8px; vertical-align: 0; }
+    .reading-foot { margin: 14px 0 0; font-size: 12px; color: var(--mute); word-break: keep-all; }
+    @media (max-width: 900px) {
+      .anatomy { grid-template-columns: 1fr; gap: 28px; }
+      .reading { border-left: 0; padding-left: 0; }
+    }
+
+    /* Generic data tables (index / freight / tariff / POD) */
+    .data { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .data thead th {
+      text-align: left; font: 600 10px/1.3 var(--sans); letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--mute); padding: 14px 10px 10px; border-bottom: 1px solid var(--ink); white-space: nowrap; vertical-align: bottom;
+    }
+    .data td { padding: 11px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    .data tbody tr:hover td { background: rgba(233, 227, 214, 0.5); }
+    .data .r { text-align: right; }
+    .data .c { text-align: center; }
+    .data .muted { color: var(--mute); }
+    .data .strong { font-weight: 700; }
+    .data .acc { color: var(--accent); font-weight: 700; }
+    .data tr.group-start td { border-top: 1px solid var(--ink); }
+    .data .grp { font-family: var(--serif-ko); font-weight: 600; font-size: 14px; letter-spacing: -0.03em; white-space: nowrap; }
+    .data .grp b { font-family: var(--sans); font-size: 11px; letter-spacing: 0.1em; margin-right: 6px; }
+    .data .note { color: var(--mute); font-size: 11.5px; min-width: 280px; word-break: keep-all; }
+    .data th.is-off, .data td.is-off { color: var(--faint); }
+    .data thead tr.group-row th { border-bottom: 1px solid var(--rule); padding-bottom: 6px; text-align: center; color: var(--ink-2); }
+    .inline-input {
+      width: 82px; text-align: right; background: transparent; border: 0; border-bottom: 1px solid var(--ink);
+      padding: 2px 2px; font-weight: 600; font-size: 12.5px; border-radius: 0;
+    }
+    .inline-input:focus { outline: none; border-bottom: 2px solid var(--accent); }
+
+    /* Index (all materials) */
+    .index-table { min-width: 880px; }
+    .index-table thead tr:last-child th:first-child { width: 210px; }
+    .index-table td.ix { text-align: center; cursor: pointer; padding: 14px 8px 12px; border-left: 1px solid var(--rule); }
+    .index-table td.ix:hover { background: var(--paper-2) !important; }
+    .ix-code { display: block; font-family: var(--serif-en); font-size: 22px; font-weight: 600; line-height: 1; letter-spacing: 0.02em; }
+    .ix-price { display: block; margin-top: 5px; font-size: 13px; font-weight: 600; }
+    .ix-gap { display: block; font-size: 10.5px; color: var(--mute); }
+    .ix-dest strong { display: block; font-family: var(--serif-ko); font-weight: 600; font-size: 15px; letter-spacing: -0.03em; }
+    .ix-dest span { font-size: 10.5px; color: var(--mute); letter-spacing: 0.06em; }
+
+    /* Freight controls */
+    .param-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-bottom: 1px solid var(--rule); }
+    .param { padding: 18px 22px 18px 0; }
+    .param + .param { padding-left: 22px; border-left: 1px solid var(--rule); }
+    .param label.eyebrow { display: block; margin-bottom: 8px; }
+    .param .big-input {
+      width: 110px; font-family: var(--serif-en); font-size: 28px; font-weight: 500; letter-spacing: -0.02em;
+      background: transparent; border: 0; border-bottom: 1px solid var(--ink); padding: 0 0 2px; border-radius: 0;
+    }
+    .param .big-input:focus { outline: none; border-bottom: 2px solid var(--accent); }
+    .param small { display: block; margin-top: 6px; font-size: 11.5px; color: var(--mute); }
+    .checks { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+    @media (max-width: 900px) {
+      .param-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .param:nth-child(3) { padding-left: 0; border-left: 0; }
+      .param:nth-child(n+3) { border-top: 1px solid var(--rule); }
+    }
+    .warn { margin: 14px 0 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 12.5px; }
+
+    /* Check / toggle */
+    .check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; cursor: pointer; line-height: 1.45; }
+    .check input { appearance: none; -webkit-appearance: none; flex: none; width: 14px; height: 14px; margin: 2px 0 0; border: 1px solid var(--ink); background: transparent; display: grid; place-content: center; cursor: pointer; border-radius: 0; }
+    .check input::after { content: ''; width: 8px; height: 8px; background: var(--ink); transform: scale(0); transition: transform .1s ease; }
+    .check input:checked::after { transform: scale(1); }
+    .check small { display: block; color: var(--mute); font-size: 11.5px; }
+
+    /* ------------------------------------------------------------------
+       Settings drawer
+       ------------------------------------------------------------------ */
+    .scrim { position: fixed; inset: 0; z-index: 70; background: rgba(20, 19, 18, 0.32); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+    .scrim.is-open { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 80; width: min(460px, 100vw);
+      background: var(--card); border-left: 1px solid var(--ink);
+      transform: translateX(102%); transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+      display: flex; flex-direction: column;
+    }
+    .drawer.is-open { transform: none; }
+    .drawer-head { display: flex; justify-content: space-between; align-items: flex-end; padding: 22px 28px 16px; border-bottom: 1px solid var(--ink); }
+    .drawer-head h3 { margin: 6px 0 0; font-family: var(--serif-en); font-style: italic; font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: -0.02em; }
+    .drawer-body { overflow-y: auto; padding: 0 28px 40px; }
+    .drawer-sec { padding: 22px 0; border-bottom: 1px solid var(--rule); }
+    .drawer-sec h4 { margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; font-family: var(--serif-ko); font-weight: 600; font-size: 16px; letter-spacing: -0.03em; }
+    .drawer-sec h4 .n { font-family: var(--serif-en); font-style: italic; font-weight: 400; color: var(--accent); font-size: 14px; }
+    .drawer-sec h4 small { margin-left: auto; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--mute); }
+    .hint { margin: 0 0 12px; font-size: 12px; color: var(--mute); word-break: keep-all; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .fob-row { display: grid; grid-template-columns: 32px 1fr auto 96px; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+    .fob-row:last-child { border-bottom: 0; }
+    .fob-row .code { font-weight: 700; font-size: 11.5px; letter-spacing: 0.1em; }
+    .fob-row .name { font-family: var(--serif-ko); font-weight: 600; font-size: 14px; }
+    .fob-row.is-off .code, .fob-row.is-off .name { color: var(--faint); text-decoration: line-through; }
+    .money { display: flex; align-items: baseline; justify-content: flex-end; gap: 2px; border-bottom: 1px solid var(--ink); padding-bottom: 2px; }
+    .money span { color: var(--mute); font-size: 12px; }
+    .money input { width: 64px; text-align: right; border: 0; background: transparent; font-weight: 700; font-size: 14px; padding: 0; }
+    .money input:focus { outline: none; }
+    .money.is-off { border-bottom-style: dashed; border-bottom-color: var(--faint); color: var(--faint); justify-content: center; font-size: 13px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .ghost-btn { border: 1px solid var(--ink); padding: 7px 12px; font-size: 12px; font-weight: 500; }
+    .ghost-btn:hover { background: var(--ink); color: var(--paper); }
+    .ghost-btn.is-quiet { border-color: var(--rule); color: var(--mute); }
+    .row-field { display: flex; justify-content: space-between; align-items: center; gap: 14px; font-size: 13px; }
+    .fine { margin: 12px 0 0; font-size: 11.5px; color: var(--mute); line-height: 1.5; word-break: keep-all; }
+
+    /* ------------------------------------------------------------------
+       Modal, tooltip, toast
+       ------------------------------------------------------------------ */
+    .modal { position: fixed; inset: 0; z-index: 90; background: rgba(20, 19, 18, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-card { background: var(--card); border: 1px solid var(--ink); width: min(1100px, 100%); max-height: 86vh; display: flex; flex-direction: column; }
+    .modal-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding: 22px 28px 16px; border-bottom: 1px solid var(--ink); }
+    .modal-head h3 { margin: 6px 0 0; font-family: var(--serif-ko); font-weight: 600; font-size: 22px; letter-spacing: -0.04em; }
+    .modal-body { overflow: auto; padding: 0 28px 24px; }
+
     #hoverTooltipPopup {
-      pointer-events: none;
-      transition: opacity 0.12s ease, transform 0.12s ease;
-      box-shadow: 0 20px 38px -6px rgba(17, 17, 17, 0.28), 0 8px 16px -4px rgba(165, 0, 52, 0.12);
+      position: fixed; z-index: 100; width: 380px; max-width: calc(100vw - 24px);
+      background: var(--card); color: var(--ink); border: 1px solid var(--ink);
+      box-shadow: 0 24px 48px -20px rgba(20, 19, 18, 0.45);
+      pointer-events: none; font-size: 12px;
     }
-    ::-webkit-scrollbar {
-      height: 7px;
-      width: 7px;
+    .tt { padding: 16px 18px 16px; }
+    .tt-kicker { font: 600 9.5px/1.3 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+    .tt-title { margin: 6px 0 2px; font-family: var(--serif-ko); font-weight: 700; font-size: 20px; letter-spacing: -0.045em; line-height: 1.2; }
+    .tt-title .arrow { font-family: var(--serif-en); font-weight: 400; color: var(--mute); margin: 0 4px; }
+    .tt-meta { color: var(--mute); font-size: 11.5px; }
+    .tt-rank { display: inline-block; margin-top: 8px; padding: 3px 8px; font-size: 11px; font-weight: 600; border: 1px solid var(--ink); }
+    .tt-rank.is-first { background: var(--ink); color: var(--paper); }
+    .tt-bar { display: flex; height: 6px; margin: 14px 0 6px; background: var(--paper-2); }
+    .tt-bar i { display: block; height: 100%; }
+    .tt-share { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--mute); }
+    .tt-ledger { margin: 10px 0 0; }
+    .tt-ledger div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--rule); }
+    .tt-ledger dt { color: var(--ink-2); }
+    .tt-ledger dd { margin: 0; font-weight: 600; white-space: nowrap; }
+    .tt-ledger .sub { border-bottom: 0; padding: 0 0 5px 10px; color: var(--mute); font-size: 10.5px; }
+    .tt-ledger .sub dt { color: var(--mute); }
+    .tt-ledger .sum dt, .tt-ledger .sum dd { font-weight: 700; color: var(--ink); }
+    .tt-ledger dd.acc { color: var(--accent); }
+    .tt-grid { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+    .tt-grid caption { text-align: left; font: 600 9.5px/1.3 var(--sans); letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); padding-bottom: 6px; }
+    .tt-grid th, .tt-grid td { padding: 5px 6px; border: 1px solid var(--rule); text-align: center; font-weight: 500; }
+    .tt-grid th { color: var(--mute); font-weight: 600; background: var(--paper); }
+    .tt-grid td small { color: var(--mute); font-size: 10px; }
+    .tt-grid td.on { background: var(--ink); color: var(--paper); font-weight: 700; }
+    .tt-grid td.on small { color: var(--faint); }
+    .tt-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; padding-top: 10px; border-top: 2px solid var(--ink); }
+    .tt-total span { font-weight: 600; font-size: 12px; }
+    .tt-total strong { font-family: var(--serif-en); font-weight: 500; font-size: 30px; line-height: 1; letter-spacing: -0.03em; }
+    .tt-door { display: flex; justify-content: space-between; color: var(--mute); font-size: 11px; margin-top: 4px; }
+    .tt-note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--rule); color: var(--ink-2); font-size: 11px; line-height: 1.5; word-break: keep-all; }
+    .tt-note b { color: var(--accent); font-weight: 600; margin-right: 4px; }
+    .tt-rank-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11.5px; }
+    .tt-rank-table th { text-align: left; font: 600 9.5px/1.3 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); padding: 4px 4px 6px; border-bottom: 1px solid var(--ink); }
+    .tt-rank-table td { padding: 6px 4px; border-bottom: 1px solid var(--rule); }
+    .tt-rank-table tr.first td { font-weight: 700; }
+    .tt-rank-table tr.first td:first-child { color: var(--accent); }
+    .tt-rank-table tr.off td { color: var(--faint); }
+    .tt-rank-table .r { text-align: right; }
+    .tt-rank-table .acc { color: var(--accent); }
+
+    #toastNotice {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 110;
+      background: var(--ink); color: var(--paper); padding: 12px 20px; font-size: 12.5px; font-weight: 500;
+      max-width: calc(100vw - 32px); box-shadow: 0 16px 32px -16px rgba(20, 19, 18, 0.5);
     }
-    ::-webkit-scrollbar-track {
-      background: #EFECE6;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #C7C3B8;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #A50034;
-    }
+
+    /* Colophon */
+    .colophon { margin-top: 88px; border-top: 3px double var(--ink); }
+    .colophon-inner { display: grid; grid-template-columns: auto 1fr; gap: 12px 48px; padding-top: 22px; padding-bottom: 36px; font-size: 11.5px; color: var(--mute); }
+    .colophon .logo-sm { font-family: var(--serif-en); font-size: 28px; font-weight: 500; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+    .colophon p { margin: 0; word-break: keep-all; }
+    .colophon b { color: var(--ink-2); font-weight: 600; }
+    @media (max-width: 760px) { .colophon-inner { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-  <!-- LG Signature Top Accent Line -->
-  <div class="h-1 w-full lg-brand-gradient"></div>
-
-  <!-- Compact Header -->
-  <header class="bg-[#111111] text-white border-b border-[#262626] sticky top-0 z-30 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-[#A50034] flex items-center justify-center font-extrabold text-xs tracking-tighter text-white border border-white/15 select-none">
-          LG
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">글로벌 원재료 최적 소싱 대시보드</h1>
-            <span class="hidden sm:inline-block text-[10px] bg-[#A50034] text-white px-2 py-0.5 rounded-full font-bold">3초 요약 · 호버 팝업 뷰</span>
-          </div>
-          <p class="text-[11px] text-neutral-400">11개 법인 거점별 최적 소싱처 · 마우스 커서를 셀에 올리면 상세 원가가 팝업되며, 미생산 국가는 "없음(-)" 처리됩니다</p>
-        </div>
-      </div>
-
-      <!-- Compact Action Buttons -->
-      <div class="flex flex-wrap items-center gap-1.5">
-        <button id="btnOpenPortModal" type="button" class="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 px-3 py-1.5 rounded-full font-semibold transition">
-          ⚓ 기준항(POD) 매핑 안내
-        </button>
-        <button id="btnToggleSettingsDrawer" type="button" class="text-xs bg-[#FAF9F6] hover:bg-white text-[#111111] border border-neutral-300 px-3 py-1.5 rounded-full font-extrabold transition shadow-xs">
-          ⚙️ 상세 설정 · FOB 키인(없음 설정) ▲
-        </button>
-        <div class="relative inline-block">
-          <button id="btnDownloadMenuToggle" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3.5 py-1.5 rounded-full font-bold transition flex items-center gap-1 shadow-sm">
-            <span>📥</span> Raw Data 다운로드 ▾
-          </button>
-          <div id="downloadDropdownMenu" class="hidden absolute right-0 mt-1.5 w-60 bg-[#1C1C1E] border border-neutral-700 rounded-xl shadow-xl py-1.5 z-50 text-xs text-white">
-            <button id="btnExportCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
-              <span>📊 현재 품목 매트릭스 (CSV)</span>
-              <span class="text-[10px] text-neutral-400">55구간</span>
-            </button>
-            <button id="btnExportFreightRawCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
-              <span>🚢 해상물류비 Raw Data (CSV)</span>
-              <span class="text-[10px] text-neutral-400">3대지수</span>
-            </button>
-            <button id="btnExportTariffRawCsv" type="button" class="w-full text-left px-3.5 py-2 hover:bg-[#A50034] transition flex items-center justify-between">
-              <span>🏛️ 전품목 관세 Raw Data (CSV)</span>
-              <span class="text-[10px] text-neutral-400">330구간</span>
-            </button>
+  <!-- ================================================================
+       MASTHEAD
+       ================================================================ -->
+  <header>
+    <div class="wrap"><div class="topline">
+      <p class="eyebrow">Vol. 2026<span class="hide-xs"> &nbsp;·&nbsp; Q4 Edition</span></p>
+      <p class="eyebrow hide-sm">Global Raw Material Sourcing Report</p>
+      <nav class="utility" aria-label="도구">
+        <button id="btnOpenPortModal" type="button" class="link-btn">POD 매핑</button>
+        <div class="dl">
+          <button id="btnDownloadMenuToggle" type="button" class="link-btn" aria-haspopup="true">Download</button>
+          <div id="downloadDropdownMenu" class="menu hidden" role="menu">
+            <button id="btnExportCsv" type="button" role="menuitem"><span>현재 품목 매트릭스 CSV</span><small>55구간</small></button>
+            <button id="btnExportFreightRawCsv" type="button" role="menuitem"><span>해상물류비 Raw Data CSV</span><small>3대 지수</small></button>
+            <button id="btnExportTariffRawCsv" type="button" role="menuitem"><span>전 품목 관세 Raw Data CSV</span><small>330구간</small></button>
           </div>
         </div>
-      </div>
-    </div>
+        <button id="btnToggleSettingsDrawer" type="button" class="ink-btn" aria-controls="settingsDrawer" aria-expanded="false">Settings</button>
+      </nav>
+    </div></div>
 
-    <!-- Clean Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between border-t border-neutral-800 bg-[#161616] overflow-x-auto">
-      <div class="flex items-center gap-1">
-        <button id="tabBtnMatrix" type="button" data-tab="matrix" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-[#FD312E] text-white whitespace-nowrap transition">
-          ⚡ 1. 품목별 3초 요약 & 호버 매트릭스
-        </button>
-        <button id="tabBtnSummary" type="button" data-tab="summary" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
-          📑 2. 전 품목(6종) × 11개 거점 한눈에 보기
-        </button>
-        <button id="tabBtnFreight" type="button" data-tab="freight" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
-          🚢 3. 해상물류비 원천데이터 (55항로)
-        </button>
-        <button id="tabBtnTariff" type="button" data-tab="tariff" class="nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition">
-          🏛️ 4. 관세·무역구제 원천데이터
-        </button>
-      </div>
-      <div class="hidden lg:flex items-center gap-2 text-[11px] text-neutral-400 pr-2 whitespace-nowrap">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>미생산 국가는 "없음" 선택 시 매트릭스에 "-"로 표시됩니다</span>
+    <div class="wrap nameplate">
+      <h1 class="logo">Sourcing</h1>
+      <div class="nameplate-deck">
+        <p class="ko">글로벌 원재료 최적 소싱 리포트</p>
+        <p class="meta">생산국 5개 × 법인 거점 11개 × 원재료 6종 · 단위 USD/MT</p>
       </div>
     </div>
   </header>
 
-  <!-- Main Workspace Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+  <div class="sections-bar">
+    <nav class="wrap sections" aria-label="섹션">
+      <button type="button" class="nav-tab-btn is-active" data-tab="matrix"><span class="n">01</span>커버스토리</button>
+      <button type="button" class="nav-tab-btn" data-tab="summary"><span class="n">02</span>전 품목 인덱스</button>
+      <button type="button" class="nav-tab-btn" data-tab="freight"><span class="n">03</span>해상운임</button>
+      <button type="button" class="nav-tab-btn" data-tab="tariff"><span class="n">04</span>관세 · 무역구제</button>
+    </nav>
+  </div>
 
-    <!-- SINGLE-BAR FILTER, MATERIAL SELECTOR & FOB KEY-IN (With "없음" Selector!) -->
-    <section class="lg-card px-4 py-3">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- Material Pills -->
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-xs font-extrabold text-neutral-500 mr-1 flex items-center gap-1">
-            <span class="w-1.5 h-3.5 rounded-full bg-[#A50034] inline-block"></span>품목:
-          </span>
-          <div id="materialBtnGroup" class="flex flex-wrap gap-1.5"></div>
-          <span id="activeHsBadge" class="text-[11px] font-mono bg-[#F4F3EF] text-neutral-700 px-2 py-0.5 rounded-md border border-[#E4E2DC] font-bold ml-1">HS 7210.49</span>
-        </div>
-
-        <!-- Quick Core Toggles -->
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <select id="selectPriceBasis" class="bg-[#FAF9F6] border border-[#E4E2DC] rounded-lg px-2.5 py-1.5 font-bold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A50034]">
-            <option value="landed">기준항 통관도착가 (Landed)</option>
-            <option value="door">최종공장 입고가 (내륙포함)</option>
-            <option value="cif">순수 기준항 CIF</option>
+  <!-- ================================================================
+       CONTROL STRIP
+       ================================================================ -->
+  <section class="wrap">
+    <div class="controls">
+      <div id="materialBtnGroup" class="materials" role="group" aria-label="품목"></div>
+      <div class="switches">
+        <label class="field">
+          <span class="eyebrow">기준가</span>
+          <select id="selectPriceBasis" class="select">
+            <option value="landed">통관도착가 (Landed)</option>
+            <option value="door">공장입고가 (내륙 포함)</option>
+            <option value="cif">기준항 CIF</option>
             <option value="addon">총 부대비용 (물류+관세)</option>
           </select>
-
-          <!-- 1) 판매 구분: 내수(기본값·관세부과) / 수출 -->
-          <div class="inline-flex items-center bg-[#F4F3EF] p-0.5 rounded-lg border border-[#E4E2DC]" title="완제품 판매 목적 선택: 현지 내수 판매용(기본값·관세 및 AD 정상 부과) vs 해외 수출용">
-            <span class="text-[11px] font-extrabold text-neutral-600 px-2">판매:</span>
-            <button type="button" id="btnSalesDomestic" class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition">🏠 내수(과세기본)</button>
-            <button type="button" id="btnSalesExport" class="px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition">🌐 수출</button>
+        </label>
+        <div class="field">
+          <span class="eyebrow">판매</span>
+          <div class="seg">
+            <button type="button" id="btnSalesDomestic" class="is-on">내수</button>
+            <button type="button" id="btnSalesExport">수출</button>
           </div>
-
-          <!-- 2) 공장 구분: 비보세(기본값·관세부과) / 보세 -->
-          <div class="inline-flex items-center bg-[#F4F3EF] p-0.5 rounded-lg border border-[#E4E2DC]" title="공장 자격 선택: 비보세 일반공장(기본값·관세 및 AD 정상 부과) vs 보세구역(특구/수출면허)">
-            <span class="text-[11px] font-extrabold text-neutral-600 px-2">공장:</span>
-            <button type="button" id="btnZoneNonBonded" class="px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition">🏢 비보세(일반기본)</button>
-            <button type="button" id="btnZoneBonded" class="px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition">🏭 보세</button>
+        </div>
+        <div class="field">
+          <span class="eyebrow">공장</span>
+          <div class="seg">
+            <button type="button" id="btnZoneNonBonded" class="is-on">비보세</button>
+            <button type="button" id="btnZoneBonded">보세</button>
           </div>
+        </div>
+      </div>
+    </div>
+    <p id="conditionLine" class="condition"></p>
+  </section>
 
-          <div class="flex items-center gap-1 bg-[#FDF2F5] px-2.5 py-1 rounded-lg border border-[#F3C1CF]" title="재정경제부고시 제2026-80호(2026.6.12 시행) 중국산 도금·컬러강판 반덤핑 관세">
-            <span class="text-[11px] font-bold text-[#A50034]">🇰🇷 대중국 철강AD:</span>
-            <select id="selectKrChinaSteelAd" class="bg-transparent font-extrabold text-[#A50034] focus:outline-none cursor-pointer">
-              <option value="25.75">25.75% (기본)</option>
-              <option value="22.34">22.34% (바오터우)</option>
-              <option value="26.28">26.28% (수강징탕)</option>
-              <option value="33.67">33.67% (윈스톤)</option>
-              <option value="0">0% (미적용)</option>
-            </select>
+  <main>
+
+    <!-- ==============================================================
+         01  COVER STORY
+         ============================================================== -->
+    <div id="tabPanelMatrix">
+      <section class="wrap cover">
+        <div>
+          <p class="eyebrow is-accent">Cover Story &nbsp;—&nbsp; <span id="coverMatLabel"></span></p>
+          <h2 id="coverHeadline" class="headline"></h2>
+          <p id="coverDeck" class="deck"></p>
+        </div>
+        <aside class="cover-figure">
+          <p class="eyebrow">The Number</p>
+          <div id="kpiAvgBestPrice" class="bignum num"></div>
+          <p id="kpiAvgBestCaption" class="caption"></p>
+        </aside>
+      </section>
+
+      <section class="wrap">
+        <div class="figures">
+          <div class="fig">
+            <p class="eyebrow">2순위 대비 평균 절감</p>
+            <p id="figSavings" class="fig-val num"></p>
+            <p id="figSavingsSub" class="fig-sub"></p>
           </div>
+          <div class="fig">
+            <p class="eyebrow">한국 (부산) 1순위</p>
+            <p id="figKorea" class="fig-val num"></p>
+            <p id="figKoreaSub" class="fig-sub"></p>
+          </div>
+          <div class="fig">
+            <p class="eyebrow">선택이 가장 중요한 거점</p>
+            <p id="figGap" class="fig-val num"></p>
+            <p id="figGapSub" class="fig-sub"></p>
+          </div>
+          <div class="fig">
+            <p class="eyebrow">무역구제 적용 구간</p>
+            <p id="figRisk" class="fig-val num"></p>
+            <p id="figRiskSub" class="fig-sub"></p>
+          </div>
+        </div>
+      </section>
 
-          <label class="inline-flex items-center gap-1 bg-[#E6F4F0] px-2.5 py-1 rounded-lg border border-[#007A5E]/40 font-extrabold text-[#00664E] cursor-pointer" title="태국 BOI Section 36(보세/수출가공) 및 태국 DFT 전기·전자(가전) 제조용 원재료 반덤핑(AD) 직권 면제 적용 (중국산 GI 35.5%·PCM 29.8% 및 한국산 AD 0% 면제)">
-            <input id="chkThailandBondedExemption" type="checkbox" class="rounded border-[#007A5E] text-[#007A5E] focus:ring-[#007A5E]" />
-            <span>🇹🇭 태국 보세·가전용 AD면제</span>
+      <section class="wrap block">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">01</span><span class="en">The Line-up</span><span class="ko">거점별 1순위 소싱처</span></h3>
+          <p class="block-note">커서를 올리면 전체 순위, 클릭하면 아래 원가 해부가 그 거점으로 바뀝니다</p>
+        </header>
+        <ol id="quickDestCardsGrid" class="lineup"></ol>
+      </section>
+
+      <section class="wrap block">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">02</span><span class="en">The Matrix</span><span class="ko">출발지 × 도착 거점</span></h3>
+          <div class="legend">
+            <span><i class="lg-r1"></i>1순위</span>
+            <span><i class="lg-r2"></i>2순위</span>
+            <span><i class="lg-risk"></i>무역구제 15% 이상</span>
+            <span>— 생산 없음</span>
+            <span id="matrixUnit"></span>
+          </div>
+        </header>
+        <div class="table-scroll">
+          <table class="matrix">
+            <thead><tr id="matrixHeaderRow"></tr></thead>
+            <tbody id="matrixTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="wrap block">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">03</span><span class="en">Anatomy of Cost</span><span class="ko">원가 해부</span></h3>
+          <label class="field" style="flex-direction:row;align-items:baseline;gap:12px">
+            <span class="eyebrow">거점</span>
+            <select id="selectChartDest" class="select"></select>
           </label>
-
-          <label class="inline-flex items-center gap-1 bg-[#FAF9F6] px-2.5 py-1 rounded-lg border border-[#E4E2DC] font-semibold text-neutral-800 cursor-pointer" title="브라질 마나우스 자유무역지대(ZFM) 기본관세 88% 감면 (단, 반덤핑 관세는 미면제)">
-            <input id="chkManausZfm" type="checkbox" class="rounded border-neutral-400 text-[#A50034] focus:ring-[#A50034]" />
-            <span>🇧🇷 마나우스 ZFM(기본세감면)</span>
-          </label>
+        </header>
+        <div class="anatomy">
+          <div class="chart-box"><canvas id="destComparisonChart" aria-label="생산지별 원가 구조 비교 차트" role="img"></canvas></div>
+          <div class="reading" id="anatomyReading"></div>
         </div>
-      </div>
-
-      <!-- Detailed Settings & FOB Key-in Drawer (Open by default so user can immediately see and use the "없음" option, and collapsible anytime) -->
-      <div id="settingsDrawer" class="mt-3 pt-3 border-t border-[#EBE9E2] space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-3 text-xs">
-            <span class="font-extrabold text-neutral-900 flex items-center gap-1">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#A50034] text-white text-[10px]">✎</span>
-              생산지별 FOB 단가 Key-in <span class="text-neutral-500 font-normal">(생산업체가 없는 국가는 <strong class="text-[#A50034]">"없음"</strong> 선택 시 매트릭스에 <strong class="text-neutral-900">"-"</strong> 표시)</span>
-            </span>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2 text-xs">
-            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer">
-              <input id="chkApplyFta" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
-              <span>FTA 우선</span>
-            </label>
-            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer">
-              <input id="chkApplyAdCvd" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
-              <span>AD/232조 반영</span>
-            </label>
-            <label class="flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer mr-1">
-              <input id="chkIncludeDomestic" type="checkbox" checked class="rounded border-neutral-300 text-[#A50034] focus:ring-[#A50034]" />
-              <span>내수포함</span>
-            </label>
-            <button type="button" id="presetBase" class="text-[11px] bg-[#F4F3EF] hover:bg-[#E6E4DD] text-neutral-800 border border-[#DFDDD4] px-2.5 py-1 rounded-full font-semibold transition">시장가</button>
-            <button type="button" id="presetChinaDrop" class="text-[11px] bg-[#FDF2F5] hover:bg-[#F9D8E2] text-[#A50034] border border-[#F3C1CF] px-2.5 py-1 rounded-full font-semibold transition">중국 -10%</button>
-            <button type="button" id="presetEqualFob" class="text-[11px] bg-neutral-900 hover:bg-neutral-800 text-white px-2.5 py-1 rounded-full font-semibold transition">동일 FOB</button>
-            <button type="button" id="btnResetDefaults" class="text-[11px] bg-white hover:bg-neutral-100 text-neutral-600 border border-neutral-300 px-2.5 py-1 rounded-full font-semibold transition">초기화</button>
-          </div>
-        </div>
-
-        <!-- 5 Origin FOB Key-in + "없음" Selector Cards -->
-        <div id="fobInputGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"></div>
-
-        <!-- Per-Subsidiary Bonded Zone / End-Use AD & Tariff Exemption Toggles -->
-        <div class="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#E4E2DC] flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div class="flex items-center gap-1.5 font-extrabold text-neutral-800">
-            <span class="px-1.5 py-0.5 rounded bg-[#111111] text-white text-[10px]">보세·용도면제</span>
-            <span>거점별 보세구역(Bonded/SEZ) · 수출용 원재료 AD/관세 면제 시뮬레이션:</span>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <label class="inline-flex items-center gap-1 font-bold text-[#00664E] cursor-pointer" title="태국 BOI Sec.36 / Free Zone 및 DFT 가전·전기전자 제조용 도금·컬러강판 AD 면제(0%)">
-              <input id="chkBondedTH" type="checkbox" class="rounded text-[#007A5E]" />
-              <span>🇹🇭 태국(BOI·가전용 AD면제)</span>
-            </label>
-            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="인니 보세구역(Kawasan Berikat) 및 KITE 수출가공용 수입원자재 관세·반덤핑(BMAD) 면제(0%)">
-              <input id="chkBondedID" type="checkbox" class="rounded text-[#A50034]" />
-              <span>🇮🇩 인니(KB·KITE 보세면제)</span>
-            </label>
-            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="인도 Advance Authorisation(사전수출면허) 및 SEZ/EOU 수출용 원자재 기본관세·AD 면제(0%)">
-              <input id="chkBondedIN" type="checkbox" class="rounded text-[#A50034]" />
-              <span>🇮🇳 인도(AA·SEZ 수출면제)</span>
-            </label>
-            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="한국 보세공장 반입 후 전량 해외 재수출 물량에 대한 중국산 도금·컬러강판 반덤핑(25.75%) 면제(0%) — 내수 반입분은 면제 불가">
-              <input id="chkBondedKR" type="checkbox" class="rounded text-[#A50034]" />
-              <span>🇰🇷 한국(보세공장 수출분 AD면제)</span>
-            </label>
-            <label class="inline-flex items-center gap-1 font-semibold text-neutral-700 cursor-pointer" title="이집트 수에즈경제특구(SCZONE) 및 Free Zone 수출가공용 원재료 관세·AD 면제(0%)">
-              <input id="chkBondedEG" type="checkbox" class="rounded text-[#A50034]" />
-              <span>🇪🇬 이집트(SCZONE 보세면제)</span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- TAB 1: 3-SECOND EXECUTIVE VIEW & HOVER MATRIX                       -->
-    <!-- =================================================================== -->
-    <div id="tabPanelMatrix" class="space-y-4">
-
-      <!-- 3-SECOND TEST BLOCK 1: 4 ULTRA-CLEAR HEADLINE KPI CARDS -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="lg-card p-3.5 relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#A50034]"></div>
-          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">11개 거점 평균 최적가</div>
-          <div class="mt-1 flex items-baseline gap-1.5">
-            <span id="kpiAvgBestPrice" class="text-2xl sm:text-3xl font-black text-neutral-900 font-mono tracking-tight">$0</span>
-            <span class="text-xs text-neutral-500 font-bold">/ MT</span>
-          </div>
-          <div id="kpiAvgBestSub" class="mt-1 text-xs text-[#007A5E] font-extrabold">2순위 대비 평균 -$0/MT 절감</div>
-        </div>
-
-        <div class="lg-card p-3.5 relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#111111]"></div>
-          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">최다 1위 최적 소싱국</div>
-          <div class="mt-1 flex items-center justify-between">
-            <span id="kpiTopOrigin" class="text-xl sm:text-2xl font-black text-[#A50034]">-</span>
-            <span id="kpiTopOriginCount" class="text-xs bg-[#FDF2F5] text-[#A50034] border border-[#F3C1CF] px-2 py-0.5 rounded-full font-extrabold">0개 거점</span>
-          </div>
-          <div id="kpiTopOriginSub" class="mt-1 text-xs text-neutral-500 font-medium truncate">단거리 해운 및 무관세 협정 우위</div>
-        </div>
-
-        <div class="lg-card p-3.5 relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#007A5E]"></div>
-          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">한국(부산) 1순위 최적 소싱</div>
-          <div class="mt-1 flex items-center justify-between">
-            <span id="kpiKoreaBest" class="text-xl sm:text-2xl font-black text-[#007A5E] font-mono">-</span>
-            <span id="kpiKoreaDiff" class="text-xs bg-[#E6F4F0] text-[#007A5E] px-2 py-0.5 rounded-full font-extrabold">-$0</span>
-          </div>
-          <div id="kpiKoreaSub" class="mt-1 text-xs text-neutral-500 font-medium truncate">중국산 AD 부과 여부 반영</div>
-        </div>
-
-        <div class="lg-card p-3.5 relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-1.5 h-full bg-[#FD312E]"></div>
-          <div class="text-[11px] font-bold text-neutral-500 uppercase tracking-tight">활성 생산지 / 주의 항로</div>
-          <div class="mt-1 flex items-baseline justify-between">
-            <span id="kpiTradeRiskCount" class="text-2xl sm:text-3xl font-black text-[#A50034] font-mono">0</span>
-            <span id="kpiActiveOriginsBadge" class="text-xs text-[#A50034] bg-[#FDF2F5] border border-[#F3C1CF] px-2 py-0.5 rounded-full font-bold">생산국 5개 활성</span>
-          </div>
-          <div class="mt-1 text-xs text-neutral-500 font-medium truncate">미생산("없음") 제외 기준 무역구제 구간</div>
-        </div>
-      </div>
-
-      <!-- 3-SECOND TEST BLOCK 2: 11 DESTINATION WINNERS AT A GLANCE (Hoverable Cards) -->
-      <div class="lg-card p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-4 rounded-full bg-[#A50034] inline-block"></span>
-            <h2 class="text-sm sm:text-base font-extrabold text-neutral-900">한눈에 보는 11개 거점별 1순위 최적 소싱처</h2>
-            <span class="text-[11px] text-neutral-500 hidden sm:inline">— 카드에 마우스를 올리면 전체 순위 비교와 항구(POD) 상세 내역이 팝업됩니다</span>
-          </div>
-          <span id="quickStripMatBadge" class="text-xs font-bold text-[#A50034] bg-[#FDF2F5] border border-[#F3C1CF] px-2.5 py-0.5 rounded-full">Steel · GI</span>
-        </div>
-        <div id="quickDestCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-11 gap-2">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-      <!-- 3-SECOND TEST BLOCK 3: ULTRA-CLEAN 5x11 MATRIX (Numbers Only + "-" for None + Cursor Hover Popup) -->
-      <div class="lg-card overflow-hidden">
-        <div class="px-4 py-3 border-b border-[#E4E2DC] flex flex-wrap items-center justify-between gap-2 bg-[#FAF9F6]">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-4 rounded-full bg-[#111111] inline-block"></span>
-            <h3 class="text-sm sm:text-base font-extrabold text-neutral-900">출발지(5개국) × 도착 거점(11개소) CIF · 통관도착가 분석 매트릭스</h3>
-            <span class="text-xs text-neutral-500 hidden md:inline">(단위: USD/MT · 생산업체 <strong class="text-[#A50034]">"없음"</strong> 선택 시 <strong class="text-neutral-900">"-"</strong> 표시 · <strong>셀에 커서를 올리면 상세 원가 팝업</strong>)</span>
-          </div>
-          <div class="flex items-center gap-3 text-xs font-semibold">
-            <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#007A5E] inline-block"></span> ★ 1위 최적</span>
-            <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-[#E4E2DC] border border-neutral-500 inline-block"></span> 2위 대안</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#A50034] inline-block"></span> 고율 관세/AD 주의</span>
-            <span class="inline-flex items-center gap-1 text-neutral-400"><span class="font-mono font-bold text-neutral-500">-</span> 생산업체 없음</span>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr id="matrixHeaderRow" class="bg-[#F4F3EF] text-neutral-800 text-xs border-b border-[#E4E2DC]"></tr>
-            </thead>
-            <tbody id="matrixTableBody" class="divide-y divide-[#EBE9E2] text-xs sm:text-sm"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- COMPACT VISUAL CHART SECTION -->
-      <div class="lg-card p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-1.5 h-4 rounded-full bg-[#A50034] inline-block"></span>
-            <h4 id="chartDestTitle" class="text-sm sm:text-base font-extrabold text-neutral-900">선택 거점 5대 생산지 원가 구조 비교 (FOB + 해운·보험 + 관세)</h4>
-          </div>
-          <div class="flex items-center gap-2">
-            <label for="selectChartDest" class="text-xs font-bold text-neutral-600">비교 거점 선택:</label>
-            <select id="selectChartDest" class="text-xs bg-[#FAF9F6] border border-neutral-300 rounded-lg px-3 py-1.5 font-bold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A50034]"></select>
-          </div>
-        </div>
-        <div class="relative h-60 w-full">
-          <canvas id="destComparisonChart"></canvas>
-        </div>
-      </div>
-
+      </section>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- TAB 2: ALL 6 MATERIALS SUMMARY MATRIX (Clean + Hover Popup)         -->
-    <!-- =================================================================== -->
-    <div id="tabPanelSummary" class="hidden space-y-4">
-      <div class="lg-card overflow-hidden">
-        <div class="px-4 py-3.5 border-b border-[#E4E2DC] bg-[#FAF9F6] flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h3 class="text-sm sm:text-base font-extrabold text-neutral-900">전 품목(Steel 2종 · Resin 4종) × 11개 법인 거점 최적 소싱 한눈에 보기</h3>
-            <p class="text-xs text-neutral-500 mt-0.5">품목별로 <strong>"없음"</strong> 설정된 생산국은 자동 제외되며, 각 셀에 <strong>마우스 커서를 올리면 CIF·관세율·2순위 대안 및 절감액이 팝업</strong>됩니다.</p>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
+    <!-- ==============================================================
+         02  INDEX — all materials
+         ============================================================== -->
+    <div id="tabPanelSummary" class="hidden">
+      <section class="wrap block" style="padding-top:40px">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">02</span><span class="en">The Index</span><span class="ko">전 품목 6종 × 11개 거점</span></h3>
+          <p class="block-note">'없음'으로 설정한 생산국은 자동 제외 · 셀에 커서를 올리면 원가 상세</p>
+        </header>
+        <div class="table-scroll">
+          <table class="data index-table">
             <thead>
-              <tr class="bg-[#111111] text-white uppercase border-b border-neutral-800">
-                <th class="py-3 px-3.5 font-bold">최종 목적지 거점 (인근 기준항)</th>
-                <th class="py-3 px-3 font-bold text-center bg-[#262626]">Steel: GI<br><span class="text-[10px] font-mono text-neutral-300">HS 7210.49</span></th>
-                <th class="py-3 px-3 font-bold text-center bg-[#262626]">Steel: PCM<br><span class="text-[10px] font-mono text-neutral-300">HS 7210.70</span></th>
-                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: ABS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.30</span></th>
-                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: 복합PP<br><span class="text-[10px] font-mono text-pink-200">HS 3902.30</span></th>
-                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: HIPS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.19</span></th>
-                <th class="py-3 px-3 font-bold text-center bg-[#A50034]">Resin: EPS<br><span class="text-[10px] font-mono text-pink-200">HS 3903.11</span></th>
+              <tr class="group-row">
+                <th></th>
+                <th colspan="2">Steel</th>
+                <th colspan="4">Resin</th>
               </tr>
+              <tr id="summaryHeaderRow"></tr>
             </thead>
-            <tbody id="allMaterialsSummaryBody" class="divide-y divide-[#EBE9E2]"></tbody>
+            <tbody id="allMaterialsSummaryBody"></tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- TAB 3: OCEAN FREIGHT BENCHMARK RAW DATA                             -->
-    <!-- =================================================================== -->
-    <div id="tabPanelFreight" class="hidden space-y-4">
-      <div class="lg-card p-4 space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#EBE9E2] pb-3">
-          <div>
-            <h3 class="text-base font-extrabold text-neutral-900">인근 기준항(Port Pair)별 해상물류비 3대 지수 원천데이터 (55개 항로)</h3>
-            <p class="text-xs text-neutral-500 mt-0.5">Drewry WCI·IACI / SCFI, Freightos(FBX), Cogoport 스팟 운임 평균 및 톤당 환산 해운비입니다.</p>
+    <!-- ==============================================================
+         03  FREIGHT
+         ============================================================== -->
+    <div id="tabPanelFreight" class="hidden">
+      <section class="wrap block" style="padding-top:40px">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">03</span><span class="en">Freight</span><span class="ko">인근 기준항별 해상물류비 · 55개 항로</span></h3>
+          <div class="block-tools">
+            <p class="block-note">Drewry WCI·IACI / SCFI · Freightos FBX · Cogoport 스팟 운임 평균</p>
+            <button id="btnExportFreightTabCsv" type="button" class="ghost-btn">CSV 다운로드</button>
           </div>
-          <div class="flex flex-wrap items-center gap-3 bg-[#FAF9F6] p-2.5 rounded-xl border border-[#E4E2DC]">
-            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
-              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="drewry" checked />
-              <span>Drewry/SCFI</span>
-            </label>
-            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
-              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="freightos" checked />
-              <span>Freightos FBX</span>
-            </label>
-            <label class="flex items-center gap-1 text-xs font-semibold text-neutral-800 cursor-pointer">
-              <input type="checkbox" class="freight-source-chk rounded text-[#A50034]" value="cogoport" checked />
-              <span>Cogoport</span>
-            </label>
-            <button id="btnExportFreightTabCsv" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3 py-1 rounded-full font-bold transition">
-              📥 CSV 다운로드
-            </button>
-          </div>
-        </div>
+        </header>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#FAF9F6] border border-[#E4E2DC] rounded-xl p-3">
-          <div>
-            <label for="inputContainerTons" class="block text-xs font-bold text-neutral-800">컨테이너당 적재중량 (MT/Box)</label>
-            <div class="mt-1 flex items-center gap-2">
-              <input id="inputContainerTons" type="number" min="5" max="30" step="0.5" value="24" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
-              <span class="text-xs text-neutral-500">MT (철강 24, 수지 22, EPS 17)</span>
-            </div>
+        <div class="param-row">
+          <div class="param">
+            <label class="eyebrow" for="inputContainerTons">컨테이너당 적재중량</label>
+            <input id="inputContainerTons" class="big-input num" type="number" min="5" max="30" step="0.5" value="24" />
+            <small>MT/Box · 현재 품목 기준 (철강 24, 수지 22, EPS 17)</small>
           </div>
-          <div>
-            <label for="inputInsuranceRate" class="block text-xs font-bold text-neutral-800">해상 적하보험료율 (%)</label>
-            <div class="mt-1 flex items-center gap-2">
-              <input id="inputInsuranceRate" type="number" min="0" max="5" step="0.05" value="0.20" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
-              <span class="text-xs text-neutral-500">% (110% 부보 기준)</span>
-            </div>
+          <div class="param">
+            <label class="eyebrow" for="inputInsuranceRate">적하보험료율</label>
+            <input id="inputInsuranceRate" class="big-input num" type="number" min="0" max="5" step="0.05" value="0.20" />
+            <small>% · 110% 부보 기준</small>
           </div>
-          <div>
-            <label for="inputFreightMultiplier" class="block text-xs font-bold text-neutral-800">해상운임 일괄 시황 조정 (%)</label>
-            <div class="mt-1 flex items-center gap-2">
-              <input id="inputFreightMultiplier" type="number" min="50" max="250" step="5" value="100" class="w-24 text-sm font-mono font-bold bg-white border border-neutral-300 rounded-lg px-2 py-1 text-right" />
-              <span class="text-xs text-neutral-500">% (100% = 현재 공시지수)</span>
+          <div class="param">
+            <label class="eyebrow" for="inputFreightMultiplier">운임 일괄 시황 조정</label>
+            <input id="inputFreightMultiplier" class="big-input num" type="number" min="50" max="250" step="5" value="100" />
+            <small>% · 100 = 현재 공시지수</small>
+          </div>
+          <div class="param">
+            <span class="eyebrow" style="display:block;margin-bottom:8px">평균에 쓸 지수</span>
+            <div class="checks">
+              <label class="check"><input type="checkbox" class="freight-source-chk" value="drewry" checked /><span>Drewry / SCFI</span></label>
+              <label class="check"><input type="checkbox" class="freight-source-chk" value="freightos" checked /><span>Freightos FBX</span></label>
+              <label class="check"><input type="checkbox" class="freight-source-chk" value="cogoport" checked /><span>Cogoport</span></label>
             </div>
           </div>
         </div>
+        <p id="freightSourceWarning" class="warn hidden">지수를 2개 이상 선택해야 평균 해상물류비가 한쪽 출처에 치우치지 않습니다.</p>
 
-        <div id="freightSourceWarning" class="hidden p-2 rounded-lg bg-[#FDF2F5] border border-[#F3C1CF] text-xs text-[#A50034] font-semibold">
-          ⚠️ 최소 2개 이상의 물류비 출처를 선택해야 공정한 평균 해상물류비가 산출됩니다.
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
+        <div class="table-scroll">
+          <table class="data" style="min-width:1080px">
             <thead>
-              <tr class="bg-[#F4F3EF] text-neutral-700 uppercase border-b border-[#E4E2DC]">
-                <th class="py-2.5 px-3 font-bold">출발지</th>
-                <th class="py-2.5 px-3 font-bold">도착 법인</th>
-                <th class="py-2.5 px-3 font-bold">기준 항로 (POL ➔ 인근 POD)</th>
-                <th class="py-2.5 px-3 font-bold text-right">Drewry/SCFI ($/Box)</th>
-                <th class="py-2.5 px-3 font-bold text-right">Freightos ($/Box)</th>
-                <th class="py-2.5 px-3 font-bold text-right">Cogoport ($/Box)</th>
-                <th class="py-2.5 px-3 font-bold text-right bg-[#FAF9F6]">평균 ($/Box)</th>
-                <th class="py-2.5 px-3 font-bold text-right bg-[#FDF2F5] text-[#A50034]">톤당 해운비 ($/MT)</th>
-                <th class="py-2.5 px-3 font-bold text-right">내륙운송 ($/MT)</th>
+              <tr>
+                <th>출발지</th>
+                <th>도착 거점</th>
+                <th>기준 항로 (POL → POD)</th>
+                <th class="r" data-src-col="drewry">Drewry $/Box</th>
+                <th class="r" data-src-col="freightos">FBX $/Box</th>
+                <th class="r" data-src-col="cogoport">Cogoport $/Box</th>
+                <th class="r">평균 $/Box</th>
+                <th class="r">톤당 해운비 $/MT</th>
+                <th class="r">내륙운송 $/MT</th>
               </tr>
             </thead>
-            <tbody id="freightDetailTableBody" class="divide-y divide-[#EBE9E2]"></tbody>
+            <tbody id="freightDetailTableBody"></tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- TAB 4: TARIFF, FTA & AD/CVD RAW DATA                                -->
-    <!-- =================================================================== -->
-    <div id="tabPanelTariff" class="hidden space-y-4">
-      <div class="lg-card p-4 space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#EBE9E2] pb-3">
-          <div>
-            <h3 class="text-base font-extrabold text-neutral-900">
-              품목별 관세·FTA·반덤핑(AD/CVD) 원천데이터 (<span id="tariffTabMaterialName" class="text-[#A50034]">GI</span>)
-            </h3>
-            <p class="text-xs text-neutral-500 mt-0.5">한국 재정경제부고시 제2026-80호 중국산 도금·컬러강판 AD(22.34~33.67%), 미국 232조·301조, 브라질 AD 및 ZFM 감면을 모두 포함합니다.</p>
+    <!-- ==============================================================
+         04  TARIFF
+         ============================================================== -->
+    <div id="tabPanelTariff" class="hidden">
+      <section class="wrap block" style="padding-top:40px">
+        <header class="block-head">
+          <h3 class="block-title"><span class="block-num">04</span><span class="en">Tariff</span><span class="ko">관세 · FTA · 무역구제 — <span id="tariffTabMaterialName"></span></span></h3>
+          <div class="block-tools">
+            <p class="block-note">MFN · FTA 양허 · AD/CVD · 미국 232조/301조 · 브라질 AD 및 ZFM 감면</p>
+            <button id="btnExportTariffTabCsv" type="button" class="ghost-btn">전 품목 CSV (330구간)</button>
           </div>
-          <button id="btnExportTariffTabCsv" type="button" class="text-xs bg-[#A50034] hover:bg-[#8A002B] text-white px-3.5 py-1.5 rounded-full font-bold transition whitespace-nowrap">
-            📥 전 품목(330구간) 관세 CSV 다운로드
-          </button>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
+        </header>
+        <div class="table-scroll">
+          <table class="data" style="min-width:1180px">
             <thead>
-              <tr class="bg-[#F4F3EF] text-neutral-700 uppercase border-b border-[#E4E2DC]">
-                <th class="py-2.5 px-3 font-bold">출발지</th>
-                <th class="py-2.5 px-3 font-bold">도착 거점</th>
-                <th class="py-2.5 px-3 font-bold text-right">MFN (%)</th>
-                <th class="py-2.5 px-3 font-bold text-right">FTA (%)</th>
-                <th class="py-2.5 px-3 font-bold">적용 협정</th>
-                <th class="py-2.5 px-3 font-bold text-right text-[#A50034]">AD/CVD/232조 (%)</th>
-                <th class="py-2.5 px-3 font-bold text-right bg-[#141414] text-white">실효 관세율 (%)</th>
-                <th class="py-2.5 px-3 font-bold">통관 및 무역구제 근거</th>
+              <tr>
+                <th>출발지</th>
+                <th>도착 거점</th>
+                <th class="r">MFN %</th>
+                <th class="r">FTA %</th>
+                <th>적용 협정</th>
+                <th class="r">AD·CVD·232 %</th>
+                <th class="r" title="현재 판매·공장 조건을 반영한 세율">실효 관세율 %</th>
+                <th>통관 및 무역구제 근거</th>
               </tr>
             </thead>
-            <tbody id="tariffDetailTableBody" class="divide-y divide-[#EBE9E2]"></tbody>
+            <tbody id="tariffDetailTableBody"></tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
 
   </main>
 
-  <!-- MODAL: PORT OF DISCHARGE (POD) MAPPING GUIDE -->
-  <div id="portGuideModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-[#18181B] text-neutral-100 rounded-2xl border border-neutral-700 shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-      <div class="px-5 py-3.5 border-b border-neutral-800 flex items-center justify-between bg-[#111111]">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-extrabold text-white">⚓ 10개국 11개 법인 최종 목적지(공장) 및 인근 기준 항구(POD) 매핑표</span>
-          <span class="text-[11px] bg-[#A50034] text-white px-2 py-0.5 rounded-full font-bold">물류 산정 기준</span>
-        </div>
-        <button id="btnClosePortModal" type="button" class="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-3 py-1 rounded-full border border-neutral-600 font-bold">
-          닫기 ✕
-        </button>
+  <!-- ================================================================
+       COLOPHON
+       ================================================================ -->
+  <footer class="colophon">
+    <div class="wrap colophon-inner">
+      <span class="logo-sm">Sourcing</span>
+      <div>
+        <p><b>검증 출처</b> — Drewry WCI·IACI · SCFI · Freightos FBX · Cogoport FCL · 한국 무역위·재경부 제2026-80호(중국산 도금·컬러강판 AD) · World Bank WITS · ITC MAcMap · USITC HTS · Brazil Secex</p>
+        <p style="margin-top:6px">모든 금액은 USD/MT. 운임·관세 수치는 원본 데이터 패키지(global_sourcing_freight_tariff_raw_data_2026.xlsx) 기준이며, 이 화면은 그 값을 재계산해 보여줄 뿐 새 수치를 만들지 않습니다.</p>
       </div>
-      <div class="p-4 overflow-y-auto">
-        <table class="w-full text-left border-collapse text-xs">
+    </div>
+  </footer>
+
+  <!-- ================================================================
+       SETTINGS DRAWER
+       ================================================================ -->
+  <div id="drawerScrim" class="scrim"></div>
+  <aside id="settingsDrawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-head">
+      <div>
+        <p class="eyebrow">Simulation</p>
+        <h3 id="drawerTitle">Settings</h3>
+      </div>
+      <button id="btnCloseDrawer" type="button" class="link-btn">닫기</button>
+    </div>
+    <div class="drawer-body">
+      <section class="drawer-sec">
+        <h4><span class="n">01</span>생산지별 FOB 단가<small id="drawerMatLabel"></small></h4>
+        <p class="hint">생산업체가 없는 국가는 '없음'으로 두면 비교에서 빠지고 매트릭스에 '—'로 표시됩니다.</p>
+        <div id="fobInputGrid"></div>
+        <div class="presets">
+          <button type="button" id="presetBase" class="ghost-btn">시장가</button>
+          <button type="button" id="presetChinaDrop" class="ghost-btn">중국 −10%</button>
+          <button type="button" id="presetEqualFob" class="ghost-btn">동일 FOB</button>
+          <button type="button" id="btnResetDefaults" class="ghost-btn is-quiet">전체 초기화</button>
+        </div>
+      </section>
+
+      <section class="drawer-sec">
+        <h4><span class="n">02</span>관세 적용 규칙</h4>
+        <div class="stack" style="margin-top:12px">
+          <label class="check"><input id="chkApplyFta" type="checkbox" checked /><span>FTA 양허세율 우선 적용</span></label>
+          <label class="check"><input id="chkApplyAdCvd" type="checkbox" checked /><span>반덤핑·232조 등 무역구제 반영</span></label>
+          <label class="check"><input id="chkIncludeDomestic" type="checkbox" checked /><span>동일국 내수 조달도 순위에 포함</span></label>
+          <label class="check"><input id="chkManausZfm" type="checkbox" /><span>브라질 마나우스 ZFM 기본관세 88% 감면<small>반덤핑 관세는 감면 대상 아님</small></span></label>
+          <div class="row-field">
+            <span>한국 수입 · 중국산 도금·컬러강판 AD</span>
+            <select id="selectKrChinaSteelAd" class="select">
+              <option value="25.75">25.75% 기본</option>
+              <option value="22.34">22.34% 바오터우</option>
+              <option value="26.28">26.28% 수강징탕</option>
+              <option value="33.67">33.67% 윈스톤</option>
+              <option value="0">0% 미적용</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="drawer-sec">
+        <h4><span class="n">03</span>거점별 보세 · 용도 면제</h4>
+        <div class="stack" style="margin-top:12px">
+          <label class="check"><input id="chkBondedTH" type="checkbox" /><span>태국 — BOI·가전 제조용 AD 면제<small>중국산 GI 35.5% · PCM 29.8%, 한국산 AD 면제</small></span></label>
+          <label class="check"><input id="chkBondedID" type="checkbox" /><span>인니 — KB·KITE 보세 면제</span></label>
+          <label class="check"><input id="chkBondedIN" type="checkbox" /><span>인도 — AA·SEZ 수출용 면제</span></label>
+          <label class="check"><input id="chkBondedKR" type="checkbox" /><span>한국 — 보세공장 수출분 AD 면제</span></label>
+          <label class="check"><input id="chkBondedEG" type="checkbox" /><span>이집트 — SCZONE 보세 면제</span></label>
+        </div>
+        <p class="fine">참고: 현재 계산식에는 태국 항목만 연결되어 있습니다. 인니·인도·한국·이집트 체크박스는 원본과 마찬가지로 가격에 영향을 주지 않으며, 상단 '보세' 전환 시 수출·보세 조건에서만 일괄 0%가 적용됩니다.</p>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ================================================================
+       POD MAPPING MODAL
+       ================================================================ -->
+  <div id="portGuideModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="portModalTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow is-accent">Logistics Basis</p>
+          <h3 id="portModalTitle">11개 법인 최종 목적지와 인근 기준 도착항(POD)</h3>
+        </div>
+        <button id="btnClosePortModal" type="button" class="link-btn">닫기</button>
+      </div>
+      <div class="modal-body">
+        <table class="data" style="min-width:900px">
           <thead>
-            <tr class="bg-neutral-800 text-neutral-300 border-b border-neutral-700">
-              <th class="py-2 px-2.5 font-bold">법인 거점</th>
-              <th class="py-2 px-2.5 font-bold text-[#FF8A9E]">최종 목적지 (공장)</th>
-              <th class="py-2 px-2.5 font-bold text-emerald-300">인근 기준 도착항 (POD)</th>
-              <th class="py-2 px-2.5 font-bold text-right">항구➔공장 거리</th>
-              <th class="py-2 px-2.5 font-bold text-right">내륙운송비 (참고)</th>
-              <th class="py-2 px-2.5 font-bold">항로 및 통관 특이사항</th>
+            <tr>
+              <th>법인 거점</th>
+              <th>최종 목적지</th>
+              <th>기준 도착항 (POD)</th>
+              <th class="r">항구 → 공장</th>
+              <th class="r">내륙운송비</th>
+              <th>항로 · 통관 특이사항</th>
             </tr>
           </thead>
-          <tbody id="portGuideTableBody" class="divide-y divide-neutral-800 text-neutral-200"></tbody>
+          <tbody id="portGuideTableBody"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- FLOATING CURSOR HOVER TOOLTIP POPUP -->
-  <div id="hoverTooltipPopup" class="fixed z-50 hidden w-80 sm:w-96 bg-[#141416] text-white rounded-2xl border border-neutral-700 overflow-hidden text-xs">
-    <div class="h-1 w-full lg-brand-gradient"></div>
-    <div id="hoverTooltipContent" class="p-3.5 space-y-2.5"></div>
-  </div>
-
-  <!-- Footer -->
-  <footer class="bg-white border-t border-[#E4E2DC] mt-4 py-3 px-4 sm:px-6 text-[11px] text-neutral-500">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <strong class="text-neutral-800">검증 출처:</strong>
-        Drewry WCI·IACI · SCFI · Freightos FBX · Cogoport FCL · 한국 무역위·재경부 제2026-80호(중국산 도금·컬러강판 AD) · World Bank WITS · ITC MAcMap · USITC HTS · Brazil Secex
-      </div>
-      <div class="text-neutral-400">LG Tone & Manner · 3-Second Executive Edition</div>
-    </div>
-  </footer>
-
-  <!-- Toast Notification -->
-  <div id="toastNotice" class="fixed bottom-5 right-5 z-50 hidden bg-[#111111] text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg border border-[#A50034]">
-    알림 메시지
-  </div>
+  <div id="hoverTooltipPopup" class="hidden" role="tooltip"><div id="hoverTooltipContent" class="tt"></div></div>
+  <div id="toastNotice" class="hidden" role="status" aria-live="polite"></div>
 
   <script>
-  (function() {
-    if (window.__LG_3SEC_DASHBOARD_V2__) {
-      const headers = document.querySelectorAll("header");
-      const mains = document.querySelectorAll("main");
-      const footers = document.querySelectorAll("footer");
-      for (let i = 1; i < headers.length; i++) headers[i].remove();
-      for (let i = 1; i < mains.length; i++) mains[i].remove();
-      for (let i = 1; i < footers.length; i++) footers[i].remove();
-      return;
-    }
-    window.__LG_3SEC_DASHBOARD_V2__ = true;
+  (function () {
+    'use strict';
 
     // =========================================================================
     // 1. MASTER DATA DEFINITIONS
@@ -638,13 +925,13 @@
     const DESTINATIONS = [
       { id: 'KR', countryCode: 'KR', name: '한국 (부산)', shortName: '부산', city: '부산 (Busan)', port: '부산항', locode: 'KRPUS', flag: '🇰🇷', distanceKm: '25km (항만직결)', inlandBoxUsd: 220, portNote: '부산항 하역 후 인근 산단 직결 (중국산 도금·컬러강판 수입 시 2026.6.12 시행 반덤핑 관세 22.34~33.67% 부과)' },
       { id: 'CN', countryCode: 'CN', name: '중국 (천진)', shortName: '천진', city: '천진 (Tianjin)', port: '천진 신강항', locode: 'CNTSN', flag: '🇨🇳', distanceKm: '45km (항만직결)', inlandBoxUsd: 240, portNote: '화북 최대 관문인 천진 신강항(Xingang, CNTSN) 직기항 기준' },
-      { id: 'IN_NOI', countryCode: 'IN', name: '인도 (노이다)', shortName: '노이다', city: '노이다 (Noida)', port: '문드라항+ICD다드리', locode: 'INMUN➔INDAD', flag: '🇮🇳', distanceKm: '1,150km (철도ICD)', inlandBoxUsd: 960, portNote: '구자라트 문드라항(INMUN) 하역 후 전용 화물철도(CONCOR)로 노이다 인근 ICD Dadri 통관' },
+      { id: 'IN_NOI', countryCode: 'IN', name: '인도 (노이다)', shortName: '노이다', city: '노이다 (Noida)', port: '문드라항+ICD다드리', locode: 'INMUN→INDAD', flag: '🇮🇳', distanceKm: '1,150km (철도ICD)', inlandBoxUsd: 960, portNote: '구자라트 문드라항(INMUN) 하역 후 전용 화물철도(CONCOR)로 노이다 인근 ICD Dadri 통관' },
       { id: 'IN_PUN', countryCode: 'IN', name: '인도 (푸네)', shortName: '푸네', city: '푸네 (Pune)', port: '나바셰바항 (JNPT)', locode: 'INNSA', flag: '🇮🇳', distanceKm: '150km (고속도로)', inlandBoxUsd: 380, portNote: '뭄바이 나바셰바항(JNPT, INNSA) 하역 후 푸네 공단까지 트럭 직송' },
       { id: 'TH', countryCode: 'TH', name: '태국 (람차방)', shortName: '람차방', city: '람차방 (Laem Chabang)', port: '람차방항', locode: 'THLCH', flag: '🇹🇭', distanceKm: '30km (항만직결)', inlandBoxUsd: 210, portNote: '태국 최대 심수항인 람차방항(THLCH) 하역 후 동부경제회랑(EEC) 공단 직결' },
       { id: 'ID', countryCode: 'ID', name: '인니 (자카르타)', shortName: '자카르타', city: '자카르타 (Jakarta)', port: '탄중프리옥항', locode: 'IDJKT', flag: '🇮🇩', distanceKm: '40km (수도권산단)', inlandBoxUsd: 260, portNote: '자카르타 관문 탄중프리옥항(IDJKT) 하역 후 인근 공단 트럭 운송' },
       { id: 'SA', countryCode: 'SA', name: '사우디 (제다)', shortName: '제다', city: '제다 (Jeddah)', port: '제다 이슬람항', locode: 'SAJED', flag: '🇸🇦', distanceKm: '25km (항만직결)', inlandBoxUsd: 250, portNote: '홍해 연안 최대 항만인 제다 이슬람항(SAJED) 직기항 기준 (인도 서안 출발 최단거리)' },
       { id: 'BR', countryCode: 'BR', name: '브라질 (마나우스)', shortName: '마나우스', city: '마나우스 (Manaus)', port: '마나우스항', locode: 'BRMAO', flag: '🇧🇷', distanceKm: '15km (아마존하천항)', inlandBoxUsd: 280, portNote: '아마존강 피더선으로 마나우스항(BRMAO) 직기항 (마나우스 자유무역지대 ZFM 88% 관세감면 지역)' },
-      { id: 'EG', countryCode: 'EG', name: '이집트 (카이로)', shortName: '카이로', city: '카이로 (Cairo)', port: '아인소크나/알렉산드리아', locode: 'EGSOK/EGALY', flag: '🇪🇬', distanceKm: '120km (소크나➔카이로)', inlandBoxUsd: 350, portNote: '아시아발은 홍해측 아인소크나항(EGSOK, 카이로 120km) 하역 최적, 미국발은 지중해 알렉산드리아항 기준' },
+      { id: 'EG', countryCode: 'EG', name: '이집트 (카이로)', shortName: '카이로', city: '카이로 (Cairo)', port: '아인소크나/알렉산드리아', locode: 'EGSOK/EGALY', flag: '🇪🇬', distanceKm: '120km (소크나→카이로)', inlandBoxUsd: 350, portNote: '아시아발은 홍해측 아인소크나항(EGSOK, 카이로 120km) 하역 최적, 미국발은 지중해 알렉산드리아항 기준' },
       { id: 'US', countryCode: 'US', name: '미국 (클락스빌)', shortName: '클락스빌', city: '클락스빌 (Clarksville, TN)', port: '서배너/찰스턴항+철도', locode: 'USSAV/USCHS', flag: '🇺🇸', distanceKm: '720km (IPI 철도)', inlandBoxUsd: 1350, portNote: '미 동안 서배너항(USSAV)·찰스턴항 입항 후 철도 연계 (무역확장법 232조 철강 50% 및 301조 적용)' },
       { id: 'NO', countryCode: 'NO', name: '노르웨이 (오슬로)', shortName: '오슬로', city: '오슬로 (Oslo)', port: '오슬로항', locode: 'NOOSL', flag: '🇳🇴', distanceKm: '20km (항만직결)', inlandBoxUsd: 290, portNote: '유럽 허브항 환적 후 오슬로항(NOOSL) 직기항 (노르웨이 공산품 전 품목 관세 0%)' }
     ];
@@ -783,7 +1070,7 @@
                 else if (orig.id === 'US') { adCvd = 25.0; note = '미·중 보복관세(+25%) 반영'; }
               }
             } else if (cCode === 'IN') {
-              const podLabel = dest.id === 'IN_NOI' ? '문드라항➔ICD다드리' : '나바셰바항(푸네)';
+              const podLabel = dest.id === 'IN_NOI' ? '문드라항→ICD다드리' : '나바셰바항(푸네)';
               if (isSteel) {
                 mfn = 11.0;
                 if (orig.id === 'KR') { fta = 0.0; ftaName = '한-인도 CEPA'; note = `${podLabel}: 한-인도 CEPA 철강 0% (BIS 인증 필수)`; }
@@ -858,11 +1145,11 @@
               const egPort = orig.id === 'US' ? '알렉산드리아항' : '아인소크나항';
               if (isSteel) {
                 mfn = 12.0;
-                if (orig.id === 'CN') { adCvd = 15.0; note = `${egPort}➔카이로: 기본 12% + 중국산 도금·컬러강판 AD`; }
-                else if (orig.id === 'IN') { adCvd = 5.0; note = `${egPort}➔카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)`; }
-                else { note = `${egPort}➔카이로: 이집트 MFN 기본관세 12%`; }
+                if (orig.id === 'CN') { adCvd = 15.0; note = `${egPort}→카이로: 기본 12% + 중국산 도금·컬러강판 AD`; }
+                else if (orig.id === 'IN') { adCvd = 5.0; note = `${egPort}→카이로: 기본 12% + 세이프가드 (인도 최단거리 해운 우위)`; }
+                else { note = `${egPort}→카이로: 이집트 MFN 기본관세 12%`; }
               } else {
-                mfn = 5.0; note = `${egPort}➔카이로: 합성수지 MFN 5.0%`;
+                mfn = 5.0; note = `${egPort}→카이로: 합성수지 MFN 5.0%`;
               }
             } else if (cCode === 'NO') {
               mfn = 0.0; fta = 0.0; ftaName = '노르웨이 무관세';
@@ -1005,41 +1292,41 @@
         baseDutyPct = expBondedAllowed ? 0.0 : rawBaseDuty;
         extraDutyPct = expBondedAllowed ? 0.0 : rawExtraDuty;
         effectiveFtaName = expBondedAllowed ? '수출·보세 (관세·AD 0% 면제)' : tInfo.ftaName;
-        effectiveNote = `[🌐수출 + 🏭보세] 보세구역(Free Zone/보세공장/FTZ) 또는 사전수출면허 반입 후 해외 수출 시 기본관세(${rawBaseDuty}%) 및 반덤핑·특별관세(+${rawExtraDuty}%) 전액 0% 면제`;
+        effectiveNote = `[수출 + 보세] 보세구역(Free Zone/보세공장/FTZ) 또는 사전수출면허 반입 후 해외 수출 시 기본관세(${rawBaseDuty}%) 및 반덤핑·특별관세(+${rawExtraDuty}%) 전액 0% 면제`;
       } else if (state.salesType === 'export' && state.plantZoneType === 'nonbonded') {
         baseDutyPct = 0.0; // 수출 사후 관세환급(Drawback)
         extraDutyPct = expNonBondedExtra;
         if (rawExtraDuty > 0 && expNonBondedExtra > 0) {
           effectiveFtaName = `수출·비보세 (기본세환급·AD +${expNonBondedExtra}% 부과)`;
-          effectiveNote = `[🌐수출 + 🏢비보세] 비보세 일반공장은 수출 시 기본관세(${rawBaseDuty}%)는 환급(0%)되나, 반덤핑·232조(+${expNonBondedExtra}%)는 일반 Drawback 환급이 불가하여 그대로 부담`;
+          effectiveNote = `[수출 + 비보세] 비보세 일반공장은 수출 시 기본관세(${rawBaseDuty}%)는 환급(0%)되나, 반덤핑·232조(+${expNonBondedExtra}%)는 일반 Drawback 환급이 불가하여 그대로 부담`;
         } else if (rawExtraDuty > 0 && expNonBondedExtra === 0) {
           effectiveFtaName = destId === 'TH' ? '수출·비보세 (태국 가전용 AD면제 0%)' : '수출·비보세 (한국 개별환급 AD 0%)';
           effectiveNote = destId === 'TH'
-            ? `[🌐수출 + 🏢비보세] 태국 DFT 가전 제조용 실수요자 직권 AD 면제 및 기본관세 환급으로 0% 적용`
-            : `[🌐수출 + 🏢비보세] 한국 관세환급특례법상 수입 시 AD(+${rawExtraDuty}%) 선납 후 수출 소요량 증명(개별환급)으로 사후 환급(0%)`;
+            ? `[수출 + 비보세] 태국 DFT 가전 제조용 실수요자 직권 AD 면제 및 기본관세 환급으로 0% 적용`
+            : `[수출 + 비보세] 한국 관세환급특례법상 수입 시 AD(+${rawExtraDuty}%) 선납 후 수출 소요량 증명(개별환급)으로 사후 환급(0%)`;
         } else {
           effectiveFtaName = '수출·비보세 (관세환급 0%)';
-          effectiveNote = `[🌐수출 + 🏢비보세] 완제품 수출 후 사후 관세환급(Duty Drawback)을 통해 기본관세(${rawBaseDuty}%) 0% 환급`;
+          effectiveNote = `[수출 + 비보세] 완제품 수출 후 사후 관세환급(Duty Drawback)을 통해 기본관세(${rawBaseDuty}%) 0% 환급`;
         }
       } else if (state.salesType === 'domestic' && state.plantZoneType === 'bonded') {
         baseDutyPct = domBondedBase;
         extraDutyPct = domBondedExtra;
         if (destId === 'BR' && state.applyManausZfm) {
           effectiveFtaName = `내수·보세 (마나우스ZFM 기본세88%감면${domBondedExtra > 0 ? '·AD부과' : ''})`;
-          effectiveNote = `[🏠내수 + 🏭보세] 마나우스 자유무역지대(ZFM) 내수 판매 시 기본관세 88% 감면(${rawBaseDuty}%➔${domBondedBase}%), 단 반덤핑(AD +${domBondedExtra}%)은 내수 반출 시 100% 부과`;
+          effectiveNote = `[내수 + 보세] 마나우스 자유무역지대(ZFM) 내수 판매 시 기본관세 88% 감면(${rawBaseDuty}%→${domBondedBase}%), 단 반덤핑(AD +${domBondedExtra}%)은 내수 반출 시 100% 부과`;
         } else if (destId === 'TH' && state.bondedExemptions.TH && (matId === 'GI' || matId === 'PCM') && rawExtraDuty > 0) {
           effectiveFtaName = '내수·보세 (태국 DFT 가전용 AD면제)';
-          effectiveNote = `[🏠내수 + 🏭보세] 태국 내수 판매분이라도 DFT 전기·전자(가전) 제조용 직권 예외 및 FTA 적용 시 관세·AD 0%`;
+          effectiveNote = `[내수 + 보세] 태국 내수 판매분이라도 DFT 전기·전자(가전) 제조용 직권 예외 및 FTA 적용 시 관세·AD 0%`;
         } else {
           effectiveFtaName = `내수·보세 (내수반출 과세 ${(domBondedBase+domBondedExtra).toFixed(1)}%)`;
-          effectiveNote = `[🏠내수 + 🏭보세] 보세구역 공장에서 생산하더라도 현지 내수 시장으로 반출(판매)할 때는 일반 수입관세(${domBondedBase}%)와 반덤핑·232조(+${domBondedExtra}%)가 100% 부과됨`;
+          effectiveNote = `[내수 + 보세] 보세구역 공장에서 생산하더라도 현지 내수 시장으로 반출(판매)할 때는 일반 수입관세(${domBondedBase}%)와 반덤핑·232조(+${domBondedExtra}%)가 100% 부과됨`;
         }
       } else {
         // domestic + nonbonded
         baseDutyPct = domNonBondedBase;
         extraDutyPct = domNonBondedExtra;
         effectiveFtaName = `내수·비보세 (일반과세 ${(domNonBondedBase+domNonBondedExtra).toFixed(1)}%)`;
-        effectiveNote = `[🏠내수 + 🏢비보세] 일반 수입통관 후 현지 내수 판매 시 기본관세(${domNonBondedBase}%) 및 반덤핑·232조(+${domNonBondedExtra}%) 100% 부과 (마나우스 ZFM 등 보세특구 감면 미적용)`;
+        effectiveNote = `[내수 + 비보세] 일반 수입통관 후 현지 내수 판매 시 기본관세(${domNonBondedBase}%) 및 반덤핑·232조(+${domNonBondedExtra}%) 100% 부과 (마나우스 ZFM 등 보세특구 감면 미적용)`;
       }
 
       const totalDutyPct = Number((baseDutyPct + extraDutyPct).toFixed(2));
@@ -1123,843 +1410,8 @@
     }
 
     // =========================================================================
-    // 3. FLOATING CURSOR HOVER TOOLTIP ENGINE
+    // CSV EXPORT (unchanged)
     // =========================================================================
-    const tooltipEl = document.getElementById('hoverTooltipPopup');
-    const tooltipContentEl = document.getElementById('hoverTooltipContent');
-
-    function positionTooltip(e) {
-      if (tooltipEl.classList.contains('hidden')) return;
-      const pad = 16;
-      const rect = tooltipEl.getBoundingClientRect();
-      let left = e.clientX + pad;
-      let top = e.clientY + pad;
-
-      if (left + rect.width > window.innerWidth - 12) {
-        left = e.clientX - rect.width - pad;
-      }
-      if (top + rect.height > window.innerHeight - 12) {
-        top = Math.max(12, window.innerHeight - rect.height - 12);
-      }
-      tooltipEl.style.left = `${left}px`;
-      tooltipEl.style.top = `${top}px`;
-    }
-
-    function showCellHoverPopup(e, matId, origId, destId) {
-      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
-      const { cells, destRankings } = computeMaterialMatrix(mat.id);
-      const c = cells[origId][destId];
-      const origObj = ORIGINS.find(o => o.id === origId);
-      const destObj = DESTINATIONS.find(d => d.id === destId);
-
-      if (!c.isAvailable) {
-        tooltipContentEl.innerHTML = `
-          <div class="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
-            <div>
-              <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · HS ${mat.hsCode}</div>
-              <div class="text-sm font-extrabold text-white mt-0.5">${origObj.flag} ${origObj.name} ➔ ${destObj.flag} ${destObj.name}</div>
-            </div>
-            <span class="bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded-full font-bold text-[10px]">생산업체 없음 (-)</span>
-          </div>
-          <div class="p-3 bg-neutral-900 rounded-xl border border-neutral-800 text-neutral-300 space-y-1.5">
-            <div class="font-bold text-white">🚫 현재 품목(${mat.name})은 ${origObj.name} 생산지 "없음"으로 설정되어 있습니다.</div>
-            <div class="text-[11px] text-neutral-400">• CIF 및 통관 도착가 비교에서 자동 제외되며 매트릭스에 <strong>"-"</strong>로 표시됩니다.</div>
-            <div class="text-[11px] text-neutral-400">• 다시 포함하려면 상단 <strong>상세 설정</strong> 또는 표 좌측에서 <strong>"단가입력"</strong>으로 전환하세요.</div>
-          </div>
-        `;
-        tooltipEl.classList.remove('hidden');
-        positionTooltip(e);
-        return;
-      }
-
-      const best = destRankings[destId][0] || c;
-      const second = destRankings[destId][1] || best;
-
-      const totalForBar = Math.max(1, c.landedCost);
-      const fobPct = Math.round((c.fob / totalForBar) * 100);
-      const frtPct = Math.round(((c.freightMt + c.insuranceMt) / totalForBar) * 100);
-      const taxPct = Math.max(0, 100 - fobPct - frtPct);
-
-      const rankBadgeHtml = c.rank === 1
-        ? `<span class="bg-[#007A5E] text-white px-2 py-0.5 rounded-full font-extrabold text-[10px]">★ 1순위 최적 (2위 대비 -$${(second.displayPrice - best.displayPrice).toFixed(1)})</span>`
-        : `<span class="bg-neutral-700 text-neutral-200 px-2 py-0.5 rounded-full font-bold text-[10px]">${c.rank || '-'}순위 (1위 대비 +$${(c.diffFromBest || 0).toFixed(1)})</span>`;
-
-      tooltipContentEl.innerHTML = `
-        <div class="flex items-center justify-between gap-2 border-b border-neutral-800 pb-2">
-          <div>
-            <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · HS ${mat.hsCode}</div>
-            <div class="text-sm font-extrabold text-white mt-0.5">${origObj.flag} ${origObj.name} ➔ ${destObj.flag} ${destObj.name}</div>
-          </div>
-          ${rankBadgeHtml}
-        </div>
-
-        <div class="flex items-center justify-between text-[11px] bg-neutral-800/80 px-2.5 py-1.5 rounded-lg">
-          <span class="text-neutral-300">⚓ 기준 도착항(POD): <strong class="text-emerald-300">${destObj.port} (${destObj.locode})</strong></span>
-          <span class="text-neutral-400">${destObj.distanceKm}</span>
-        </div>
-
-        <!-- Mini Visual Stacked Bar -->
-        <div class="space-y-1">
-          <div class="flex justify-between text-[10px] text-neutral-400">
-            <span>원가 비중: FOB ${fobPct}%</span>
-            <span>해운·보험 ${frtPct}%</span>
-            <span class="${c.totalDutyPct > 0 ? 'text-[#FF8A9E] font-bold' : ''}">관세 ${taxPct}%</span>
-          </div>
-          <div class="w-full h-2 rounded-full overflow-hidden flex bg-neutral-800">
-            <div style="width:${fobPct}%" class="bg-neutral-300"></div>
-            <div style="width:${frtPct}%" class="bg-emerald-400"></div>
-            <div style="width:${taxPct}%" class="bg-[#FD312E]"></div>
-          </div>
-        </div>
-
-        <!-- Detailed Cost Breakdown -->
-        <div class="space-y-1 text-[11px] pt-1">
-          <div class="flex justify-between text-neutral-300">
-            <span>① 생산지 FOB 단가</span>
-            <span class="font-mono font-bold text-white">$${c.fob.toFixed(1)} / MT</span>
-          </div>
-          <div class="flex justify-between text-neutral-300">
-            <span>② 평균 해상물류비 (${c.tons}MT/Box)</span>
-            <span class="font-mono font-bold text-emerald-300">+$${c.freightMt.toFixed(1)} / MT</span>
-          </div>
-          <div class="text-[10px] text-neutral-400 font-mono pl-2">
-            └ Drewry $${c.drewryBox.toFixed(0)} · FBX $${c.freightosBox.toFixed(0)} · Cogoport $${c.cogoportBox.toFixed(0)} /Box
-          </div>
-          <div class="flex justify-between text-neutral-300">
-            <span>③ 해상 적하보험 (${state.insuranceRatePct}%)</span>
-            <span class="font-mono text-neutral-300">+$${c.insuranceMt.toFixed(1)} / MT</span>
-          </div>
-          <div class="flex justify-between py-1 px-2 bg-neutral-800 rounded font-bold text-white">
-            <span>④ 기준항 CIF 단가 (①+②+③)</span>
-            <span class="font-mono">$${c.cif.toFixed(1)} / MT</span>
-          </div>
-          <div class="flex justify-between text-neutral-300 pt-0.5">
-            <span>⑤ 실효 관세율 (${c.totalDutyPct.toFixed(2)}%)</span>
-            <span class="font-mono font-bold ${c.totalDutyPct > 15 ? 'text-[#FF8A9E]' : 'text-white'}">+$${c.tariffAmount.toFixed(1)} / MT</span>
-          </div>
-          <div class="text-[10px] text-neutral-400 pl-2">
-            <div>└ 현재 적용: <strong class="text-emerald-300">${c.ftaName}</strong></div>
-          </div>
-          ${!c.isDomestic ? `
-          <div class="mt-1.5 pt-1.5 border-t border-neutral-800">
-            <div class="text-[10px] font-bold text-neutral-300 mb-1">📊 [수출/내수 × 보세/비보세] 4대 조건별 도착가(Landed) 비교</div>
-            <table class="w-full text-[10px] border-collapse font-mono text-center">
-              <thead>
-                <tr class="bg-neutral-800 text-neutral-300">
-                  <th class="py-1 px-1.5 text-left">구분</th>
-                  <th class="py-1 px-1.5">🏭 보세 (특구/면허)</th>
-                  <th class="py-1 px-1.5">🏢 비보세 (일반공장)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border-b border-neutral-800">
-                  <td class="py-1 px-1.5 text-left font-sans font-bold text-neutral-300">🌐 수출용</td>
-                  <td class="py-1 px-1.5 ${state.salesType==='export' && state.plantZoneType==='bonded' ? 'bg-[#007A5E]/35 text-emerald-300 font-extrabold ring-1 ring-emerald-400' : 'text-neutral-200'}">$${c.costExpBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateExpBonded.toFixed(1)}%)</span></td>
-                  <td class="py-1 px-1.5 ${state.salesType==='export' && state.plantZoneType==='nonbonded' ? 'bg-[#007A5E]/35 text-emerald-300 font-extrabold ring-1 ring-emerald-400' : 'text-neutral-200'}">$${c.costExpNonBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateExpNonBonded.toFixed(1)}%)</span></td>
-                </tr>
-                <tr>
-                  <td class="py-1 px-1.5 text-left font-sans font-bold text-neutral-300">🏠 내수용</td>
-                  <td class="py-1 px-1.5 ${state.salesType==='domestic' && state.plantZoneType==='bonded' ? 'bg-[#A50034]/40 text-pink-200 font-extrabold ring-1 ring-[#FF8A9E]' : 'text-neutral-200'}">$${c.costDomBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateDomBonded.toFixed(1)}%)</span></td>
-                  <td class="py-1 px-1.5 ${state.salesType==='domestic' && state.plantZoneType==='nonbonded' ? 'bg-[#A50034]/40 text-pink-200 font-extrabold ring-1 ring-[#FF8A9E]' : 'text-neutral-200'}">$${c.costDomNonBonded.toFixed(0)} <span class="text-[9px] text-neutral-400">(${c.rateDomNonBonded.toFixed(1)}%)</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          ` : ''}
-          <div class="flex justify-between py-1.5 px-2.5 bg-[#A50034] text-white rounded-lg font-extrabold text-xs mt-1">
-            <span>⑥ 기준항 통관 도착가 (Landed)</span>
-            <span class="font-mono text-sm">$${c.landedCost.toFixed(1)} / MT</span>
-          </div>
-          <div class="flex justify-between text-[10px] text-neutral-400 pt-0.5 px-1">
-            <span>⑦ [참고] 공장 입고가 (내륙운송 +$${c.inlandMt.toFixed(1)}/MT 포함)</span>
-            <span class="font-mono font-bold text-neutral-200">$${c.doorCost.toFixed(1)} / MT</span>
-          </div>
-        </div>
-
-        <div class="text-[10px] text-neutral-300 bg-neutral-900/90 border border-neutral-800 p-2 rounded-lg leading-snug">
-          <strong class="text-[#FF8A9E]">📌 통관 근거:</strong> ${c.note}
-        </div>
-      `;
-
-      tooltipEl.classList.remove('hidden');
-      positionTooltip(e);
-    }
-
-    function showDestinationRankingPopup(e, matId, destId) {
-      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
-      const { cells, destRankings } = computeMaterialMatrix(mat.id);
-      const destObj = DESTINATIONS.find(d => d.id === destId);
-      const ranked = destRankings[destId];
-      const unavailable = ORIGINS.filter(o => !cells[o.id][destId].isAvailable);
-
-      if (ranked.length === 0) {
-        tooltipContentEl.innerHTML = `<div class="p-2 text-neutral-300">모든 생산지가 "없음"으로 설정되어 있습니다.</div>`;
-        tooltipEl.classList.remove('hidden');
-        positionTooltip(e);
-        return;
-      }
-
-      const best = ranked[0];
-      const second = ranked[1] || best;
-      const savings = second.displayPrice - best.displayPrice;
-
-      let rowsHtml = ranked.map(r => {
-        const o = ORIGINS.find(orig => orig.id === r.origId);
-        const isFirst = r.rank === 1;
-        return `
-          <tr class="${isFirst ? 'bg-[#007A5E]/25 text-white font-bold' : 'text-neutral-300'} border-b border-neutral-800/80">
-            <td class="py-1 px-1.5">${isFirst ? '★1위' : r.rank + '위'}</td>
-            <td class="py-1 px-1.5">${o.flag} ${o.name}</td>
-            <td class="py-1 px-1.5 text-right font-mono">$${r.cif.toFixed(0)}</td>
-            <td class="py-1 px-1.5 text-right font-mono ${r.totalDutyPct > 15 ? 'text-[#FF8A9E]' : ''}">${r.totalDutyPct.toFixed(1)}%</td>
-            <td class="py-1 px-1.5 text-right font-mono font-extrabold ${isFirst ? 'text-emerald-300' : ''}">$${r.displayPrice.toFixed(1)}</td>
-          </tr>
-        `;
-      }).join('');
-
-      unavailable.forEach(o => {
-        rowsHtml += `
-          <tr class="text-neutral-500 border-b border-neutral-800/50">
-            <td class="py-1 px-1.5 font-mono">-</td>
-            <td class="py-1 px-1.5">${o.flag} ${o.name} <span class="text-[9px] text-neutral-500">(없음)</span></td>
-            <td class="py-1 px-1.5 text-right font-mono">-</td>
-            <td class="py-1 px-1.5 text-right font-mono">-</td>
-            <td class="py-1 px-1.5 text-right font-mono font-bold">-</td>
-          </tr>
-        `;
-      });
-
-      tooltipContentEl.innerHTML = `
-        <div class="flex items-center justify-between border-b border-neutral-800 pb-2">
-          <div>
-            <div class="text-[10px] text-[#FF8A9E] font-bold">${mat.fullName} · 거점별 순위 비교</div>
-            <div class="text-sm font-extrabold text-white mt-0.5">${destObj.flag} ${destObj.name} — ⚓ ${destObj.port}</div>
-          </div>
-          <span class="bg-[#007A5E] text-white px-2 py-0.5 rounded-full font-extrabold text-[10px]">2위 대비 -$${savings.toFixed(1)}</span>
-        </div>
-
-        <table class="w-full text-left border-collapse text-[11px]">
-          <thead>
-            <tr class="text-neutral-400 border-b border-neutral-700">
-              <th class="py-1 px-1.5">순위</th>
-              <th class="py-1 px-1.5">출발지</th>
-              <th class="py-1 px-1.5 text-right">CIF</th>
-              <th class="py-1 px-1.5 text-right">관세율</th>
-              <th class="py-1 px-1.5 text-right">도착가($/MT)</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-
-        <div class="text-[10px] text-neutral-300 bg-neutral-900 border border-neutral-800 p-2 rounded-lg leading-snug">
-          <strong class="text-emerald-300">⚓ 물류 경로:</strong> ${destObj.portNote}
-        </div>
-      `;
-
-      tooltipEl.classList.remove('hidden');
-      positionTooltip(e);
-    }
-
-    function hideHoverPopup() {
-      tooltipEl.classList.add('hidden');
-    }
-
-    // =========================================================================
-    // 4. UI RENDERING FUNCTIONS
-    // =========================================================================
-    let comparisonChart = null;
-
-    function showToast(msg) {
-      const el = document.getElementById('toastNotice');
-      el.textContent = msg;
-      el.classList.remove('hidden');
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => el.classList.add('hidden'), 2600);
-    }
-
-    function renderMaterialSelector() {
-      const group = document.getElementById('materialBtnGroup');
-      group.innerHTML = '';
-      const activeMat = getActiveMaterial();
-
-      document.getElementById('activeHsBadge').textContent = `HS ${activeMat.hsCode}`;
-      document.getElementById('quickStripMatBadge').textContent = `${activeMat.fullName} (HS ${activeMat.hsCode})`;
-      document.getElementById('tariffTabMaterialName').textContent = `${activeMat.fullName} · HS ${activeMat.hsCode}`;
-      document.getElementById('inputContainerTons').value = state.tonsPerContainer[activeMat.id];
-
-      MATERIALS.forEach(m => {
-        const isSelected = m.id === state.selectedMaterialId;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = isSelected
-          ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition flex items-center gap-1'
-          : 'px-3 py-1 rounded-full text-xs font-semibold bg-[#F4F3EF] hover:bg-[#E7E5DE] text-neutral-800 border border-[#E4E2DC] transition flex items-center gap-1';
-        btn.innerHTML = `<span>${m.name}</span>`;
-        btn.addEventListener('click', () => {
-          state.selectedMaterialId = m.id;
-          renderAll();
-        });
-        group.appendChild(btn);
-      });
-    }
-
-    // Render FOB Input Cards in Detailed Settings with explicit "단가입력 / 없음" Selector!
-    function renderFobInputs() {
-      const grid = document.getElementById('fobInputGrid');
-      grid.innerHTML = '';
-      const matId = state.selectedMaterialId;
-      const fobs = state.fobPrices[matId];
-      const avail = state.originAvailable[matId];
-
-      ORIGINS.forEach(orig => {
-        const isAvail = avail[orig.id] !== false;
-        const val = fobs[orig.id];
-        const card = document.createElement('div');
-        card.className = `p-2.5 rounded-xl border transition ${isAvail ? 'bg-[#FAF9F6] border-[#E4E2DC]' : 'bg-neutral-100 border-neutral-300 opacity-85'} flex flex-col justify-between gap-2`;
-
-        card.innerHTML = `
-          <div class="flex items-center justify-between gap-1">
-            <span class="text-xs font-extrabold ${isAvail ? 'text-neutral-900' : 'text-neutral-400 line-through'}">${orig.flag} ${orig.name}</span>
-            <select
-              data-avail-select="${orig.id}"
-              class="text-[11px] font-bold rounded-md px-1.5 py-0.5 border focus:outline-none cursor-pointer ${isAvail ? 'bg-white text-neutral-800 border-neutral-300' : 'bg-neutral-800 text-white border-neutral-800'}"
-              title="${orig.name} 생산업체 유무 선택"
-            >
-              <option value="available" ${isAvail ? 'selected' : ''}>단가입력</option>
-              <option value="none" ${!isAvail ? 'selected' : ''}>없음 (-)</option>
-            </select>
-          </div>
-          ${isAvail ? `
-            <div class="flex items-center justify-between bg-white border border-neutral-300 rounded-lg px-2 py-1 focus-within:ring-2 focus-within:ring-[#A50034]">
-              <span class="text-[11px] font-mono text-neutral-400">FOB $</span>
-              <input type="number" step="5" min="1" data-orig="${orig.id}" value="${val}" class="fob-input w-20 text-xs font-mono font-extrabold text-neutral-900 text-right focus:outline-none bg-transparent" />
-              <span class="text-[10px] font-mono text-neutral-400">/MT</span>
-            </div>
-          ` : `
-            <div class="flex items-center justify-center bg-neutral-200/70 border border-dashed border-neutral-300 rounded-lg px-2 py-1 text-xs font-mono font-bold text-neutral-500 select-none">
-              - (생산업체 없음)
-            </div>
-          `}
-        `;
-        grid.appendChild(card);
-      });
-
-      // Availability dropdown listener ("단가입력" vs "없음 (-)")
-      grid.querySelectorAll('[data-avail-select]').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-          const oId = e.target.getAttribute('data-avail-select');
-          const mode = e.target.value;
-          const activeCount = ORIGINS.filter(o => state.originAvailable[matId][o.id] !== false).length;
-          if (mode === 'none' && activeCount <= 1) {
-            e.target.value = 'available';
-            showToast('최소 1개 이상의 생산 국가는 활성화되어 있어야 비교가 가능합니다.');
-            return;
-          }
-          state.originAvailable[matId][oId] = (mode === 'available');
-          renderAll();
-          const origName = ORIGINS.find(o => o.id === oId).name;
-          showToast(mode === 'none'
-            ? `${getActiveMaterial().name} — ${origName} 생산지를 "없음(-)"으로 설정했습니다.`
-            : `${getActiveMaterial().name} — ${origName} 생산지 FOB 단가를 다시 반영합니다.`);
-        });
-      });
-
-      // FOB numeric input listener
-      grid.querySelectorAll('.fob-input').forEach(inp => {
-        inp.addEventListener('input', (e) => {
-          const oId = e.target.getAttribute('data-orig');
-          const num = parseFloat(e.target.value);
-          if (!isNaN(num) && num > 0) {
-            state.fobPrices[state.selectedMaterialId][oId] = num;
-            renderMatrixAndKpis();
-            renderChart();
-            renderAllMaterialsSummary();
-          }
-        });
-      });
-    }
-
-    function renderMatrixAndKpis() {
-      const mat = getActiveMaterial();
-      const { cells, destRankings } = computeMaterialMatrix(mat.id);
-
-      // 1. Update 4 Headline KPIs
-      let sumBest = 0, sumSavings = 0, validDestCount = 0;
-      const winCounts = { KR: 0, CN: 0, TH: 0, IN: 0, US: 0 };
-
-      DESTINATIONS.forEach(d => {
-        const ranked = destRankings[d.id];
-        if (ranked && ranked.length > 0) {
-          validDestCount++;
-          const best = ranked[0];
-          const second = ranked[1] || best;
-          sumBest += best.displayPrice;
-          sumSavings += (second.displayPrice - best.displayPrice);
-          winCounts[best.origId] = (winCounts[best.origId] || 0) + 1;
-        }
-      });
-
-      const avgBest = validDestCount > 0 ? (sumBest / validDestCount) : 0;
-      const avgSavings = validDestCount > 0 ? (sumSavings / validDestCount) : 0;
-
-      let topOrigId = 'KR', topCount = -1;
-      Object.entries(winCounts).forEach(([k, v]) => {
-        if (v > topCount) { topCount = v; topOrigId = k; }
-      });
-      const topOrigObj = ORIGINS.find(o => o.id === topOrigId);
-
-      // Korea KPI card
-      const krRanked = destRankings['KR'];
-      const krBest = krRanked && krRanked[0];
-      const krSecond = (krRanked && krRanked[1]) || krBest;
-
-      let riskCount = 0;
-      let activeOriginCount = 0;
-      ORIGINS.forEach(o => {
-        if (state.originAvailable[mat.id][o.id] !== false) {
-          activeOriginCount++;
-          DESTINATIONS.forEach(d => {
-            if (cells[o.id][d.id].adCvdPct > 0) riskCount++;
-          });
-        }
-      });
-
-      document.getElementById('kpiAvgBestPrice').textContent = validDestCount > 0 ? `$${avgBest.toFixed(0)}` : '-';
-      document.getElementById('kpiAvgBestSub').textContent = `2순위 대비 평균 -$${avgSavings.toFixed(0)}/MT 절감`;
-      document.getElementById('kpiTopOrigin').textContent = topCount > 0 ? `${topOrigObj.flag} ${topOrigObj.name}산` : '-';
-      document.getElementById('kpiTopOriginCount').textContent = `11개 중 ${Math.max(0, topCount)}개 거점 1위`;
-
-      if (krBest) {
-        const krBestOrig = ORIGINS.find(o => o.id === krBest.origId);
-        document.getElementById('kpiKoreaBest').textContent = `${krBestOrig.flag} ${krBestOrig.name} $${krBest.displayPrice.toFixed(0)}`;
-        document.getElementById('kpiKoreaDiff').textContent = `2위(${krSecond.origId}) 대비 -$${(krSecond.displayPrice - krBest.displayPrice).toFixed(0)}`;
-        const cnKrCell = cells['CN']['KR'];
-        document.getElementById('kpiKoreaSub').textContent = !cnKrCell.isAvailable
-          ? '중국 생산지 "없음(-)" 설정됨'
-          : (mat.category === 'Steel'
-              ? `중국산 AD +${state.krChinaSteelAdPct}% 반영 시 $${cnKrCell.displayPrice.toFixed(0)}/MT`
-              : `한-중 FTA (${cnKrCell.totalDutyPct}%) 및 근거리 해운 반영`);
-      }
-
-      document.getElementById('kpiTradeRiskCount').textContent = `${riskCount}개 구간`;
-      document.getElementById('kpiActiveOriginsBadge').textContent = `생산국 ${activeOriginCount}개 활성`;
-
-      // 2. Render 11-Destination Quick Winner Strip
-      const quickGrid = document.getElementById('quickDestCardsGrid');
-      quickGrid.innerHTML = '';
-      DESTINATIONS.forEach(d => {
-        const ranked = destRankings[d.id];
-        const best = ranked[0];
-        const second = ranked[1] || best;
-        const isSelectedDest = state.selectedDetailDest === d.id;
-
-        const card = document.createElement('div');
-        card.className = `quick-dest-card cursor-pointer rounded-xl p-2.5 border ${isSelectedDest ? 'bg-[#FDF2F5] border-[#A50034]' : 'bg-[#FAF9F6] border-[#E4E2DC]'} flex flex-col justify-between`;
-
-        if (!best) {
-          card.innerHTML = `
-            <div class="text-[11px] font-bold text-neutral-700">${d.flag} ${d.shortName}</div>
-            <div class="my-2 text-center font-mono font-bold text-neutral-400">-</div>
-            <div class="text-[10px] text-neutral-400 text-center">생산지 없음</div>
-          `;
-        } else {
-          const origObj = ORIGINS.find(o => o.id === best.origId);
-          const diff = second.displayPrice - best.displayPrice;
-          card.innerHTML = `
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-[11px] font-bold text-neutral-700 truncate">${d.flag} ${d.shortName}</span>
-              <span class="text-[9px] font-mono text-neutral-400">${d.locode.split('➔')[0]}</span>
-            </div>
-            <div class="my-1.5">
-              <div class="text-xs font-extrabold text-[#007A5E] flex items-center gap-0.5">
-                <span>${origObj.flag} ${origObj.name}</span>
-              </div>
-              <div class="text-base font-black text-neutral-900 font-mono leading-tight mt-0.5">$${best.displayPrice.toFixed(0)}</div>
-            </div>
-            <div class="text-[10px] font-bold text-[#A50034] bg-white/80 rounded px-1.5 py-0.5 border border-[#EBE9E2] truncate">
-              ${ranked.length > 1 ? `2위(${second.origId}) -${diff.toFixed(0)}$` : '단독 소싱'}
-            </div>
-          `;
-        }
-
-        card.addEventListener('mouseenter', (e) => showDestinationRankingPopup(e, mat.id, d.id));
-        card.addEventListener('mousemove', positionTooltip);
-        card.addEventListener('mouseleave', hideHoverPopup);
-        card.addEventListener('click', () => {
-          state.selectedDetailDest = d.id;
-          document.getElementById('selectChartDest').value = d.id;
-          renderMatrixAndKpis();
-          renderChart();
-        });
-        quickGrid.appendChild(card);
-      });
-
-      // 3. Render Clean 5x11 Matrix Header
-      const headerRow = document.getElementById('matrixHeaderRow');
-      headerRow.innerHTML = `
-        <th class="py-3 px-3 font-extrabold text-neutral-900 bg-[#EAE8E1] sticky left-0 z-10 min-w-[190px]">
-          출발지 (FOB 수정 · 없음 선택)
-        </th>
-      ` + DESTINATIONS.map(d => `
-        <th class="py-2.5 px-2 text-center font-extrabold text-neutral-900 min-w-[88px] cursor-pointer hover:bg-[#E4E2DC] transition" data-dest-col="${d.id}">
-          <div class="text-xs">${d.flag} ${d.shortName}</div>
-          <div class="text-[10px] font-mono text-neutral-500 font-normal">${d.locode.split('➔')[0]}</div>
-        </th>
-      `).join('');
-
-      headerRow.querySelectorAll('[data-dest-col]').forEach(th => {
-        const dId = th.getAttribute('data-dest-col');
-        th.addEventListener('mouseenter', (e) => showDestinationRankingPopup(e, mat.id, dId));
-        th.addEventListener('mousemove', positionTooltip);
-        th.addEventListener('mouseleave', hideHoverPopup);
-      });
-
-      // 4. Render 5x11 Matrix Body (Shows "-" when Origin is set to "없음"!)
-      const tbody = document.getElementById('matrixTableBody');
-      tbody.innerHTML = '';
-
-      ORIGINS.forEach(o => {
-        const tr = document.createElement('tr');
-        const isAvail = state.originAvailable[mat.id][o.id] !== false;
-        const fobVal = state.fobPrices[mat.id][o.id];
-
-        let rowHtml = `
-          <td class="py-2.5 px-3 font-bold ${isAvail ? 'text-neutral-900 bg-[#FAF9F6]' : 'text-neutral-400 bg-neutral-100'} sticky left-0 z-10 border-r border-[#E4E2DC]">
-            <div class="flex items-center justify-between gap-1.5">
-              <span class="text-xs font-extrabold ${!isAvail ? 'line-through text-neutral-400' : ''}">${o.flag} ${o.name}</span>
-              <div class="flex items-center gap-1">
-                ${isAvail ? `
-                  <div class="flex items-center bg-white border border-neutral-300 rounded-md px-1.5 py-0.5 focus-within:ring-2 focus-within:ring-[#A50034]">
-                    <span class="text-[10px] text-neutral-400 font-mono">$</span>
-                    <input type="number" step="5" data-inline-fob="${o.id}" value="${fobVal}" class="inline-fob-input w-13 text-right font-mono font-extrabold text-xs text-[#A50034] focus:outline-none bg-transparent" title="클릭하여 ${o.name} FOB 단가 직접 수정" />
-                  </div>
-                  <button type="button" data-toggle-none="${o.id}" class="text-[10px] bg-neutral-200 hover:bg-neutral-800 hover:text-white text-neutral-700 px-1.5 py-0.5 rounded font-bold transition" title="${o.name} 생산업체 '없음(-)'으로 전환">없음</button>
-                ` : `
-                  <span class="text-[11px] font-mono font-bold text-neutral-400 px-1.5">없음 (-)</span>
-                  <button type="button" data-toggle-none="${o.id}" class="text-[10px] bg-[#A50034] hover:bg-[#8A002B] text-white px-2 py-0.5 rounded font-bold transition" title="${o.name} FOB 단가 다시 활성화">입력</button>
-                `}
-              </div>
-            </div>
-          </td>
-        `;
-
-        DESTINATIONS.forEach(d => {
-          const c = cells[o.id][d.id];
-          const isExcludedDomestic = !state.includeDomestic && c.isDomestic;
-
-          // If origin is marked "없음" (Unavailable), render clean "-" across all CIF/Landed cells!
-          if (!c.isAvailable) {
-            rowHtml += `
-              <td
-                data-orig="${o.id}"
-                data-dest="${d.id}"
-                class="matrix-cell py-3 px-2 text-center cursor-pointer border-r border-[#F0EFEA] bg-neutral-100/75 text-neutral-400"
-              >
-                <div class="font-mono font-bold text-base text-neutral-400 select-none">-</div>
-              </td>
-            `;
-            return;
-          }
-
-          let cellBg = 'bg-white hover:bg-[#FAF9F6]';
-          let topBadge = '';
-          let priceColor = 'text-neutral-900 font-bold';
-          let subText = '';
-
-          if (isExcludedDomestic) {
-            cellBg = 'bg-neutral-100 text-neutral-400';
-            topBadge = `<span class="text-[9px] text-neutral-400">내수제외</span>`;
-            priceColor = 'text-neutral-400';
-            subText = `-`;
-          } else if (c.rank === 1) {
-            cellBg = 'bg-[#E6F4F0] hover:bg-[#D5EDE6]';
-            topBadge = `<span class="inline-block text-[10px] font-extrabold bg-[#007A5E] text-white px-1.5 py-0.2 rounded">★ 1위</span>`;
-            priceColor = 'text-[#00664E] font-black text-base';
-            subText = `<span class="text-[10px] font-bold text-[#007A5E]">최저가</span>`;
-          } else if (c.rank === 2) {
-            cellBg = 'bg-[#F4F3EF] hover:bg-[#EAE8E1]';
-            topBadge = `<span class="inline-block text-[10px] font-bold bg-neutral-700 text-white px-1.5 py-0.2 rounded">2위</span>`;
-            priceColor = 'text-neutral-800 font-extrabold text-sm';
-            subText = `<span class="text-[10px] font-mono text-neutral-500">+$${c.diffFromBest.toFixed(0)}</span>`;
-          } else if (c.extraDutyPct >= 15) {
-            cellBg = 'bg-[#FDF2F5]/70 hover:bg-[#FCE8EE]';
-            topBadge = `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#A50034]"><span class="w-1.5 h-1.5 rounded-full bg-[#A50034]"></span>AD주의</span>`;
-            priceColor = 'text-[#A50034] font-bold text-sm';
-            subText = `<span class="text-[10px] font-mono text-[#A50034]/80">+$${c.diffFromBest.toFixed(0)}</span>`;
-          } else {
-            topBadge = `<span class="text-[10px] text-neutral-400">${c.rank}위</span>`;
-            priceColor = 'text-neutral-700 font-semibold text-sm';
-            subText = `<span class="text-[10px] font-mono text-neutral-400">+$${c.diffFromBest.toFixed(0)}</span>`;
-          }
-
-          rowHtml += `
-            <td
-              data-orig="${o.id}"
-              data-dest="${d.id}"
-              class="matrix-cell py-2.5 px-2 text-center cursor-pointer border-r border-[#F0EFEA] ${cellBg}"
-            >
-              <div class="flex items-center justify-center mb-0.5">${topBadge}</div>
-              <div class="font-mono ${priceColor}">$${c.displayPrice.toFixed(0)}</div>
-              <div class="mt-0.5">${subText}</div>
-            </td>
-          `;
-        });
-
-        tr.innerHTML = rowHtml;
-        tbody.appendChild(tr);
-      });
-
-      // Inline FOB input listener
-      tbody.querySelectorAll('.inline-fob-input').forEach(inp => {
-        inp.addEventListener('change', (e) => {
-          const oId = e.target.getAttribute('data-inline-fob');
-          const num = parseFloat(e.target.value);
-          if (!isNaN(num) && num > 0) {
-            state.fobPrices[state.selectedMaterialId][oId] = num;
-            renderFobInputs();
-            renderMatrixAndKpis();
-            renderChart();
-            renderAllMaterialsSummary();
-            showToast(`${oId} FOB 단가가 $${num}/MT로 반영되었습니다.`);
-          }
-        });
-      });
-
-      // Inline "없음 / 입력" toggle button listener in Matrix Left Column
-      tbody.querySelectorAll('[data-toggle-none]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const oId = btn.getAttribute('data-toggle-none');
-          const curAvail = state.originAvailable[mat.id][oId] !== false;
-          const activeCount = ORIGINS.filter(o => state.originAvailable[mat.id][o.id] !== false).length;
-          if (curAvail && activeCount <= 1) {
-            showToast('최소 1개 이상의 생산 국가는 활성화되어 있어야 비교가 가능합니다.');
-            return;
-          }
-          state.originAvailable[mat.id][oId] = !curAvail;
-          renderAll();
-          const origName = ORIGINS.find(o => o.id === oId).name;
-          showToast(!curAvail
-            ? `${mat.name} — ${origName} 생산지 FOB 단가를 다시 반영합니다.`
-            : `${mat.name} — ${origName} 생산지를 "없음(-)"으로 설정했습니다.`);
-        });
-      });
-
-      // Attach Hover Popup & Click events to the 55 matrix cells
-      tbody.querySelectorAll('.matrix-cell').forEach(td => {
-        const oId = td.getAttribute('data-orig');
-        const dId = td.getAttribute('data-dest');
-        td.addEventListener('mouseenter', (e) => showCellHoverPopup(e, mat.id, oId, dId));
-        td.addEventListener('mousemove', positionTooltip);
-        td.addEventListener('mouseleave', hideHoverPopup);
-        td.addEventListener('click', () => {
-          state.selectedDetailOrigin = oId;
-          state.selectedDetailDest = dId;
-          document.getElementById('selectChartDest').value = dId;
-          renderChart();
-        });
-      });
-    }
-
-    function renderChart() {
-      const mat = getActiveMaterial();
-      const { cells } = computeMaterialMatrix(mat.id);
-      const destObj = DESTINATIONS.find(d => d.id === state.selectedDetailDest) || DESTINATIONS[0];
-
-      document.getElementById('chartDestTitle').textContent = `${destObj.flag} ${destObj.name} [${destObj.port}] — 5대 생산지별 원가 구조 비교 (${mat.fullName}, USD/MT)`;
-
-      const labels = ORIGINS.map(o => {
-        const c = cells[o.id][destObj.id];
-        return c.isAvailable ? `${o.flag} ${o.name} ($${c.displayPrice.toFixed(0)})` : `${o.flag} ${o.name} (없음 -)`;
-      });
-      const fobData = ORIGINS.map(o => {
-        const c = cells[o.id][destObj.id];
-        return c.isAvailable ? Number(c.fob.toFixed(1)) : 0;
-      });
-      const freightInsData = ORIGINS.map(o => {
-        const c = cells[o.id][destObj.id];
-        if (!c.isAvailable) return 0;
-        const addInland = state.priceBasis === 'door' ? c.inlandMt : 0;
-        return Number((c.freightMt + c.insuranceMt + addInland).toFixed(1));
-      });
-      const tariffData = ORIGINS.map(o => {
-        const c = cells[o.id][destObj.id];
-        return c.isAvailable ? Number(c.tariffAmount.toFixed(1)) : 0;
-      });
-
-      const ctx = document.getElementById('destComparisonChart').getContext('2d');
-      if (comparisonChart) comparisonChart.destroy();
-
-      comparisonChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: '생산지 FOB ($/MT)', data: fobData, backgroundColor: '#262626', borderRadius: 5 },
-            { label: '인근항 해상물류비 + 보험 ($/MT)', data: freightInsData, backgroundColor: '#007A5E', borderRadius: 5 },
-            { label: '관세 + 무역구제 AD/232조 ($/MT)', data: tariffData, backgroundColor: '#A50034', borderRadius: 5 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { font: { family: "'Pretendard', sans-serif", size: 11, weight: '600' } } }
-          },
-          scales: {
-            x: { stacked: true, ticks: { font: { family: "'Pretendard', sans-serif", weight: 'bold' } } },
-            y: { stacked: true, beginAtZero: true }
-          }
-        }
-      });
-    }
-
-    function renderAllMaterialsSummary() {
-      const tbody = document.getElementById('allMaterialsSummaryBody');
-      tbody.innerHTML = '';
-
-      const allMatrices = {};
-      MATERIALS.forEach(m => { allMatrices[m.id] = computeMaterialMatrix(m.id); });
-
-      DESTINATIONS.forEach(d => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-[#FAF9F6]';
-
-        let html = `
-          <td class="py-2.5 px-3.5 font-bold text-neutral-900 bg-[#FAF9F6] whitespace-nowrap">
-            <div>${d.flag} ${d.name}</div>
-            <div class="text-[10px] font-semibold text-[#A50034]">⚓ ${d.port} (${d.locode})</div>
-          </td>
-        `;
-
-        MATERIALS.forEach(m => {
-          const ranked = allMatrices[m.id].destRankings[d.id];
-          const best = ranked[0];
-          const second = ranked[1] || best;
-
-          if (!best) {
-            html += `<td class="py-2.5 px-2 text-center border-l border-[#EBE9E2] font-mono text-neutral-400 font-bold">-</td>`;
-            return;
-          }
-
-          const origObj = ORIGINS.find(o => o.id === best.origId);
-          const diff = second.displayPrice - best.displayPrice;
-
-          html += `
-            <td
-              data-sum-mat="${m.id}"
-              data-sum-orig="${best.origId}"
-              data-sum-dest="${d.id}"
-              class="summary-hover-cell py-2.5 px-2 text-center border-l border-[#EBE9E2] cursor-pointer hover:bg-[#FDF2F5] transition"
-            >
-              <div class="inline-flex items-center gap-1 font-extrabold text-[#007A5E] bg-[#E6F4F0] px-2 py-0.5 rounded-full text-xs">
-                ${origObj.flag} ${origObj.name}
-              </div>
-              <div class="font-mono font-black text-neutral-900 text-sm mt-1">$${best.displayPrice.toFixed(0)}</div>
-              <div class="text-[10px] text-[#A50034] font-bold">${ranked.length > 1 ? `2위 대비 -$${diff.toFixed(0)}` : '단독 소싱'}</div>
-            </td>
-          `;
-        });
-
-        tr.innerHTML = html;
-        tbody.appendChild(tr);
-      });
-
-      tbody.querySelectorAll('.summary-hover-cell').forEach(td => {
-        const mId = td.getAttribute('data-sum-mat');
-        const oId = td.getAttribute('data-sum-orig');
-        const dId = td.getAttribute('data-sum-dest');
-        td.addEventListener('mouseenter', (e) => showCellHoverPopup(e, mId, oId, dId));
-        td.addEventListener('mousemove', positionTooltip);
-        td.addEventListener('mouseleave', hideHoverPopup);
-      });
-    }
-
-    function renderPortMappingGuide() {
-      const tbody = document.getElementById('portGuideTableBody');
-      const tons = Number(state.tonsPerContainer[state.selectedMaterialId]) || 24;
-      tbody.innerHTML = DESTINATIONS.map(d => {
-        const inlandMt = (d.inlandBoxUsd / tons).toFixed(1);
-        return `
-          <tr class="hover:bg-neutral-800/60">
-            <td class="py-2 px-2.5 font-semibold text-white whitespace-nowrap">${d.flag} ${d.name}</td>
-            <td class="py-2 px-2.5 font-bold text-[#FF8A9E] whitespace-nowrap">${d.city}</td>
-            <td class="py-2 px-2.5 font-mono text-emerald-300 whitespace-nowrap">${d.port} [${d.locode}]</td>
-            <td class="py-2 px-2.5 text-right font-mono text-neutral-300 whitespace-nowrap">${d.distanceKm}</td>
-            <td class="py-2 px-2.5 text-right font-mono text-neutral-300 whitespace-nowrap">+$${d.inlandBoxUsd}/Box (~$${inlandMt}/MT)</td>
-            <td class="py-2 px-2.5 text-neutral-300">${d.portNote}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function renderFreightTab() {
-      const mat = getActiveMaterial();
-      const { cells } = computeMaterialMatrix(mat.id);
-      const tbody = document.getElementById('freightDetailTableBody');
-      tbody.innerHTML = '';
-
-      ORIGINS.forEach(o => {
-        DESTINATIONS.forEach(d => {
-          const c = cells[o.id][d.id];
-          const overrideKey = `${mat.id}_${o.id}_${d.id}`;
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-[#FAF9F6]';
-          tr.innerHTML = `
-            <td class="py-2 px-3 font-semibold text-neutral-800 whitespace-nowrap">${o.flag} ${o.name}</td>
-            <td class="py-2 px-3 font-semibold text-neutral-800 whitespace-nowrap">${d.flag} ${d.name}</td>
-            <td class="py-2 px-3 text-neutral-600">${o.shortPort} ➔ <strong>${d.port}</strong> [${d.locode}]</td>
-            <td class="py-2 px-3 text-right font-mono">$${c.drewryBox.toFixed(0)}</td>
-            <td class="py-2 px-3 text-right font-mono">$${c.freightosBox.toFixed(0)}</td>
-            <td class="py-2 px-3 text-right font-mono">$${c.cogoportBox.toFixed(0)}</td>
-            <td class="py-2 px-3 text-right font-mono font-bold bg-[#FAF9F6]">$${c.avgBoxFreight.toFixed(0)}</td>
-            <td class="py-2 px-3 text-right bg-[#FDF2F5]/50">
-              <input type="number" step="1" data-key="${overrideKey}" value="${c.freightMt.toFixed(1)}" class="freight-mt-input w-20 text-right font-mono font-bold text-xs bg-white border border-neutral-300 rounded px-1.5 py-0.5" />
-            </td>
-            <td class="py-2 px-3 text-right font-mono text-neutral-500">+$${c.inlandMt.toFixed(1)}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      });
-
-      tbody.querySelectorAll('.freight-mt-input').forEach(inp => {
-        inp.addEventListener('change', (e) => {
-          const key = e.target.getAttribute('data-key');
-          const val = parseFloat(e.target.value);
-          if (!isNaN(val) && val >= 0) {
-            state.customFreightMt[key] = val;
-            renderAll();
-            showToast('사용자 지정 톤당 해상물류비가 반영되었습니다.');
-          }
-        });
-      });
-    }
-
-    function renderTariffTab() {
-      const mat = getActiveMaterial();
-      const { cells } = computeMaterialMatrix(mat.id);
-      const tbody = document.getElementById('tariffDetailTableBody');
-      tbody.innerHTML = '';
-
-      ORIGINS.forEach(o => {
-        DESTINATIONS.forEach(d => {
-          const c = cells[o.id][d.id];
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-[#FAF9F6]';
-          tr.innerHTML = `
-            <td class="py-2 px-3 font-semibold whitespace-nowrap">${o.flag} ${o.name}</td>
-            <td class="py-2 px-3 font-semibold whitespace-nowrap">${d.flag} ${d.name}</td>
-            <td class="py-2 px-3 text-right font-mono">${c.mfnPct}%</td>
-            <td class="py-2 px-3 text-right font-mono">${c.ftaPct}%</td>
-            <td class="py-2 px-3 text-neutral-600">${c.ftaName}</td>
-            <td class="py-2 px-3 text-right font-mono ${c.adCvdPct > 0 ? 'text-[#A50034] font-bold' : ''}">+${c.adCvdPct}%</td>
-            <td class="py-2 px-3 text-right font-mono font-bold ${c.totalDutyPct > 15 ? 'text-[#A50034] bg-[#FDF2F5]' : 'bg-[#F4F3EF]'}">${c.totalDutyPct.toFixed(2)}%</td>
-            <td class="py-2 px-3 text-neutral-500">${c.note}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      });
-    }
-
     function downloadCsvRows(filename, rows) {
       const csvContent = '\uFEFF' + rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -2001,20 +1453,646 @@
       showToast('전 품목(330개 구간) 관세 Raw Data CSV 다운로드 완료');
     }
 
-    function populateDestDropdown() {
-      const sel = document.getElementById('selectChartDest');
-      sel.innerHTML = DESTINATIONS.map(d => `<option value="${d.id}">${d.flag} ${d.name} — ${d.port}</option>`).join('');
-      sel.value = state.selectedDetailDest;
-      sel.addEventListener('change', (e) => {
-        state.selectedDetailDest = e.target.value;
-        renderMatrixAndKpis();
-        renderChart();
+    // =========================================================================
+    // 3. PRESENTATION HELPERS
+    // =========================================================================
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n, digits = 0) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const fmtSigned = (n) => (n < 0 ? '−' : '+') + fmt(Math.abs(n));
+    const ORIGIN_ADJ = { KR: '한국산', CN: '중국산', TH: '태국산', IN: '인도산', US: '미국산' };
+    const BASIS_LABEL = { landed: '통관도착가', door: '공장입고가', cif: '기준항 CIF', addon: '총 부대비용' };
+    const COLORS = { ink: '#141312', taupe: '#B9AE98', accent: '#A50034', rule: '#D8D0C2', mute: '#7A736A' };
+    const isTouch = window.matchMedia('(hover: none)').matches;
+
+    const originOf = (id) => ORIGINS.find(o => o.id === id);
+    const destOf = (id) => DESTINATIONS.find(d => d.id === id);
+    const matLabel = (m) => (m.id === 'CPP' ? '복합PP' : m.id);
+    const matKo = (m) => {
+      const inner = (m.name.match(/\((.*)\)/) || [])[1] || m.name;
+      return m.id === 'CPP' ? 'Compound' : inner;
+    };
+    const portCode = (d) => d.locode.split('→')[0];
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+    // =========================================================================
+    // 4. HOVER POPUP ENGINE
+    // =========================================================================
+    const tooltipEl = $('hoverTooltipPopup');
+    const tooltipContentEl = $('hoverTooltipContent');
+
+    function positionTooltip(e) {
+      if (tooltipEl.classList.contains('hidden')) return;
+      const pad = 18;
+      const rect = tooltipEl.getBoundingClientRect();
+      let left = e.clientX + pad;
+      let top = e.clientY + pad;
+      if (left + rect.width > window.innerWidth - 12) left = e.clientX - rect.width - pad;
+      if (left < 12) left = 12;
+      if (top + rect.height > window.innerHeight - 12) top = Math.max(12, window.innerHeight - rect.height - 12);
+      tooltipEl.style.left = `${left}px`;
+      tooltipEl.style.top = `${top}px`;
+    }
+
+    function openTooltip(html, e) {
+      tooltipContentEl.innerHTML = html;
+      tooltipEl.classList.remove('hidden');
+      positionTooltip(e);
+    }
+
+    function hideHoverPopup() {
+      tooltipEl.classList.add('hidden');
+    }
+
+    // Hover on pointer devices; tap on touch devices.
+    function bindPopup(el, show) {
+      el.setAttribute('data-popup', '');
+      el.addEventListener('mouseenter', (e) => { if (!isTouch) show(e); });
+      el.addEventListener('mousemove', positionTooltip);
+      el.addEventListener('mouseleave', () => { if (!isTouch) hideHoverPopup(); });
+      if (isTouch) el.addEventListener('click', (e) => show(e));
+    }
+
+    function showCellHoverPopup(e, matId, origId, destId) {
+      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const c = cells[origId][destId];
+      const o = originOf(origId);
+      const d = destOf(destId);
+      const head = `
+        <div class="tt-kicker">${escapeHtml(mat.fullName)} · HS ${mat.hsCode}</div>
+        <div class="tt-title">${o.name}<span class="arrow">→</span>${d.shortName}</div>
+        <div class="tt-meta">POD ${escapeHtml(d.port)} (${escapeHtml(d.locode)}) · ${escapeHtml(d.distanceKm)}</div>`;
+
+      if (!c.isAvailable) {
+        openTooltip(`${head}
+          <span class="tt-rank">생산업체 없음</span>
+          <p class="tt-note">${mat.name}의 ${o.name} 생산지가 '없음'으로 설정되어 비교에서 제외됩니다. 다시 포함하려면 Settings › FOB 단가에서 '입력'으로 바꾸세요.</p>`, e);
+        return;
+      }
+
+      const ranked = destRankings[destId];
+      const best = ranked[0] || c;
+      const second = ranked[1] || best;
+      const excluded = !c.rank;
+
+      const total = Math.max(1, c.landedCost);
+      const fobPct = Math.round((c.fob / total) * 100);
+      const frtPct = Math.round(((c.freightMt + c.insuranceMt) / total) * 100);
+      const taxPct = Math.max(0, 100 - fobPct - frtPct);
+
+      let rankHtml;
+      if (excluded) rankHtml = `<span class="tt-rank">내수 조달 · 순위 제외</span>`;
+      else if (c.rank === 1) rankHtml = `<span class="tt-rank is-first">1순위 · 2위 대비 −${fmt(second.displayPrice - best.displayPrice, 1)}</span>`;
+      else rankHtml = `<span class="tt-rank">${c.rank}순위 · 1위 대비 +${fmt(c.diffFromBest || 0, 1)}</span>`;
+
+      const on = (s, z) => (state.salesType === s && state.plantZoneType === z ? 'on' : '');
+      const gridHtml = c.isDomestic ? '' : `
+        <table class="tt-grid">
+          <caption>판매 × 공장 조건별 도착가</caption>
+          <thead><tr><th></th><th>보세</th><th>비보세</th></tr></thead>
+          <tbody>
+            <tr><th>수출</th>
+              <td class="${on('export', 'bonded')}">${fmt(c.costExpBonded)} <small>${c.rateExpBonded.toFixed(1)}%</small></td>
+              <td class="${on('export', 'nonbonded')}">${fmt(c.costExpNonBonded)} <small>${c.rateExpNonBonded.toFixed(1)}%</small></td></tr>
+            <tr><th>내수</th>
+              <td class="${on('domestic', 'bonded')}">${fmt(c.costDomBonded)} <small>${c.rateDomBonded.toFixed(1)}%</small></td>
+              <td class="${on('domestic', 'nonbonded')}">${fmt(c.costDomNonBonded)} <small>${c.rateDomNonBonded.toFixed(1)}%</small></td></tr>
+          </tbody>
+        </table>`;
+
+      openTooltip(`${head}
+        ${rankHtml}
+        <div class="tt-bar">
+          <i style="width:${fobPct}%;background:${COLORS.ink}"></i>
+          <i style="width:${frtPct}%;background:${COLORS.taupe}"></i>
+          <i style="width:${taxPct}%;background:${COLORS.accent}"></i>
+        </div>
+        <div class="tt-share"><span>FOB ${fobPct}%</span><span>운임·보험 ${frtPct}%</span><span>관세 ${taxPct}%</span></div>
+        <dl class="tt-ledger">
+          <div><dt>FOB 단가</dt><dd>${fmt(c.fob, 1)}</dd></div>
+          <div><dt>해상운임 (${c.tons}MT/Box)</dt><dd>+${fmt(c.freightMt, 1)}</dd></div>
+          <div class="sub"><dt>Drewry ${fmt(c.drewryBox)} · FBX ${fmt(c.freightosBox)} · Cogoport ${fmt(c.cogoportBox)} /Box</dt></div>
+          <div><dt>적하보험 (${state.insuranceRatePct}%)</dt><dd>+${fmt(c.insuranceMt, 1)}</dd></div>
+          <div class="sum"><dt>기준항 CIF</dt><dd>${fmt(c.cif, 1)}</dd></div>
+          <div><dt>관세 (실효 ${c.totalDutyPct.toFixed(2)}%)</dt><dd class="${c.totalDutyPct > 15 ? 'acc' : ''}">+${fmt(c.tariffAmount, 1)}</dd></div>
+          <div class="sub"><dt>적용 — ${escapeHtml(c.ftaName)}</dt></div>
+        </dl>
+        ${gridHtml}
+        <div class="tt-total"><span>통관 도착가 (Landed)</span><strong class="num">${fmt(c.landedCost, 1)}</strong></div>
+        <div class="tt-door"><span>공장 입고가 · 내륙 +${fmt(c.inlandMt, 1)}</span><span>${fmt(c.doorCost, 1)}</span></div>
+        <p class="tt-note"><b>근거</b>${escapeHtml(state.tariffs[mat.id][origId][destId].note)}</p>
+        ${state.salesType === 'domestic' && state.plantZoneType === 'nonbonded' ? '' : `<p class="tt-note" style="border-top:0;padding-top:0;margin-top:6px"><b>조건</b>${escapeHtml(c.note)}</p>`}`, e);
+    }
+
+    function showDestinationRankingPopup(e, matId, destId) {
+      const mat = MATERIALS.find(m => m.id === matId) || getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const d = destOf(destId);
+      const ranked = destRankings[destId];
+      const unavailable = ORIGINS.filter(o => !cells[o.id][destId].isAvailable);
+
+      if (ranked.length === 0) {
+        openTooltip(`<div class="tt-kicker">${escapeHtml(mat.fullName)}</div><div class="tt-title">${d.shortName}</div><p class="tt-note">비교 가능한 생산지가 없습니다.</p>`, e);
+        return;
+      }
+      const best = ranked[0];
+      const second = ranked[1] || best;
+
+      let rows = ranked.map(r => `
+        <tr class="${r.rank === 1 ? 'first' : ''}">
+          <td>${r.rank}</td>
+          <td>${originOf(r.origId).name}</td>
+          <td class="r">${fmt(r.cif)}</td>
+          <td class="r ${r.totalDutyPct > 15 ? 'acc' : ''}">${r.totalDutyPct.toFixed(1)}%</td>
+          <td class="r">${fmt(r.displayPrice, 1)}</td>
+        </tr>`).join('');
+      rows += unavailable.map(o => `<tr class="off"><td>—</td><td>${o.name} (없음)</td><td class="r">—</td><td class="r">—</td><td class="r">—</td></tr>`).join('');
+
+      openTooltip(`
+        <div class="tt-kicker">${escapeHtml(mat.fullName)} · 거점 순위</div>
+        <div class="tt-title">${d.shortName}<span class="arrow">·</span><span style="font-weight:600;font-size:15px">${escapeHtml(d.port)}</span></div>
+        <span class="tt-rank is-first">1위 ${originOf(best.origId).name} · 2위 대비 −${fmt(second.displayPrice - best.displayPrice, 1)}</span>
+        <table class="tt-rank-table">
+          <thead><tr><th>#</th><th>출발지</th><th class="r">CIF</th><th class="r">관세</th><th class="r">${BASIS_LABEL[state.priceBasis]}</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="tt-note"><b>물류 경로</b>${escapeHtml(d.portNote)}</p>`, e);
+    }
+
+    document.addEventListener('click', (e) => {
+      if (isTouch && !e.target.closest('[data-popup]')) hideHoverPopup();
+    });
+    window.addEventListener('scroll', () => { if (isTouch) hideHoverPopup(); }, { passive: true });
+
+    // =========================================================================
+    // 5. RENDERING
+    // =========================================================================
+    let comparisonChart = null;
+
+    function showToast(msg) {
+      const el = $('toastNotice');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.add('hidden'), 2600);
+    }
+
+    function renderMaterialSelector() {
+      const group = $('materialBtnGroup');
+      const active = getActiveMaterial();
+      const byCat = { Steel: [], Resin: [] };
+      MATERIALS.forEach(m => byCat[m.category].push(m));
+
+      group.innerHTML = Object.entries(byCat).map(([cat, list]) => `
+        <div class="mat-group">
+          <span class="eyebrow">${cat}</span>
+          <div class="mat-row">
+            ${list.map(m => `
+              <button type="button" class="mat-btn ${m.id === active.id ? 'is-active' : ''}" data-mat="${m.id}" aria-pressed="${m.id === active.id}">
+                <span class="code">${matLabel(m)}</span><span class="ko">${matKo(m)}</span>
+              </button>`).join('')}
+          </div>
+        </div>`).join('');
+
+      group.querySelectorAll('[data-mat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedMaterialId = btn.getAttribute('data-mat');
+          renderAll();
+        });
       });
+
+      $('coverMatLabel').textContent = `${active.fullName} · HS ${active.hsCode}`;
+      $('drawerMatLabel').textContent = matLabel(active);
+      $('tariffTabMaterialName').textContent = `${active.fullName}`;
+      $('inputContainerTons').value = state.tonsPerContainer[active.id];
+    }
+
+    function renderConditionLine() {
+      const mat = getActiveMaterial();
+      const parts = [
+        `<b>${matLabel(mat)}</b> HS ${mat.hsCode}`,
+        `<b>${BASIS_LABEL[state.priceBasis]}</b> 기준`,
+        `${state.salesType === 'export' ? '수출' : '내수'} · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}`,
+        state.applyFta ? 'FTA 우선' : 'FTA 미적용',
+        state.applyAdCvd ? '무역구제 반영' : '무역구제 제외',
+        mat.category === 'Steel' ? `한국 대중국 철강 AD ${state.krChinaSteelAdPct}%` : null,
+        state.applyManausZfm ? '마나우스 ZFM 감면' : null,
+        state.bondedExemptions.TH ? '태국 가전용 AD 면제' : null,
+        state.includeDomestic ? null : '내수 조달 제외',
+        `운임 ${state.activeFreightSources.length}개 지수 평균${Number(state.freightMultiplierPct) !== 100 ? ` × ${state.freightMultiplierPct}%` : ''}`,
+        'USD/MT'
+      ].filter(Boolean);
+      $('conditionLine').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+      $('matrixUnit').textContent = `${BASIS_LABEL[state.priceBasis]} · USD/MT`;
+    }
+
+    // Render FOB key-in rows with explicit "입력 / 없음" switch
+    function renderFobInputs() {
+      const grid = $('fobInputGrid');
+      const matId = state.selectedMaterialId;
+      const fobs = state.fobPrices[matId];
+      const avail = state.originAvailable[matId];
+
+      grid.innerHTML = ORIGINS.map(o => {
+        const isAvail = avail[o.id] !== false;
+        return `
+          <div class="fob-row ${isAvail ? '' : 'is-off'}">
+            <span class="code">${o.id}</span>
+            <span class="name">${o.name}</span>
+            <div class="seg seg-sm" role="group" aria-label="${o.name} 생산 여부">
+              <button type="button" data-avail="${o.id}" data-v="on" class="${isAvail ? 'is-on' : ''}">입력</button>
+              <button type="button" data-avail="${o.id}" data-v="off" class="${isAvail ? '' : 'is-on'}">없음</button>
+            </div>
+            ${isAvail
+              ? `<label class="money"><span>$</span><input type="number" step="5" min="1" class="fob-input num" data-orig="${o.id}" value="${fobs[o.id]}" aria-label="${o.name} FOB 단가" /></label>`
+              : `<span class="money is-off">—</span>`}
+          </div>`;
+      }).join('');
+
+      grid.querySelectorAll('[data-avail]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const oId = btn.getAttribute('data-avail');
+          const turnOn = btn.getAttribute('data-v') === 'on';
+          const cur = state.originAvailable[matId][oId] !== false;
+          if (cur === turnOn) return;
+          const activeCount = ORIGINS.filter(o => state.originAvailable[matId][o.id] !== false).length;
+          if (!turnOn && activeCount <= 1) {
+            showToast('최소 1개 생산국은 남아 있어야 비교할 수 있습니다.');
+            return;
+          }
+          state.originAvailable[matId][oId] = turnOn;
+          renderAll();
+          showToast(`${matLabel(getActiveMaterial())} — ${originOf(oId).name} 생산지를 ${turnOn ? '다시 비교에 넣었습니다' : "'없음'으로 뺐습니다"}.`);
+        });
+      });
+
+      grid.querySelectorAll('.fob-input').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const num = parseFloat(e.target.value);
+          if (!isNaN(num) && num > 0) {
+            state.fobPrices[state.selectedMaterialId][e.target.getAttribute('data-orig')] = num;
+            renderMatrixAndKpis();
+            renderChart();
+            renderAllMaterialsSummary();
+          }
+        });
+      });
+    }
+
+    function applySelectedDest() {
+      const dId = state.selectedDetailDest;
+      document.querySelectorAll('[data-lineup-dest]').forEach(el => el.classList.toggle('is-sel', el.getAttribute('data-lineup-dest') === dId));
+      document.querySelectorAll('[data-dest-col]').forEach(el => el.classList.toggle('is-col-sel', el.getAttribute('data-dest-col') === dId));
+      document.querySelectorAll('.matrix .cell').forEach(el => el.classList.toggle('is-col-sel', el.getAttribute('data-dest') === dId));
+      $('selectChartDest').value = dId;
+    }
+
+    function selectDest(dId) {
+      state.selectedDetailDest = dId;
+      applySelectedDest();
+      renderChart();
+    }
+
+    function renderMatrixAndKpis() {
+      const mat = getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const basis = BASIS_LABEL[state.priceBasis];
+
+      // ---- aggregate -------------------------------------------------------
+      let sumBest = 0, sumSavings = 0, validDestCount = 0;
+      const winCounts = { KR: 0, CN: 0, TH: 0, IN: 0, US: 0 };
+      let widest = null;
+      DESTINATIONS.forEach(d => {
+        const ranked = destRankings[d.id];
+        if (!ranked || ranked.length === 0) return;
+        validDestCount++;
+        const best = ranked[0];
+        const second = ranked[1] || best;
+        const gap = second.displayPrice - best.displayPrice;
+        sumBest += best.displayPrice;
+        sumSavings += gap;
+        winCounts[best.origId] = (winCounts[best.origId] || 0) + 1;
+        if (ranked.length > 1 && (!widest || gap > widest.gap)) widest = { d, best, second, gap };
+      });
+      const avgBest = validDestCount ? sumBest / validDestCount : 0;
+      const avgSavings = validDestCount ? sumSavings / validDestCount : 0;
+      const winners = Object.entries(winCounts).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+      const [topId, topCount] = winners[0] || [null, 0];
+      const runner = winners[1];
+
+      // ---- cover story -----------------------------------------------------
+      let headline;
+      if (!topId) headline = '비교 가능한 생산지가 없습니다.';
+      else if (topCount === validDestCount) headline = `${validDestCount}개 거점 모두,<br>답은 <span class="hl">${ORIGIN_ADJ[topId]}</span>.`;
+      else headline = `${validDestCount}개 거점 중 ${topCount}곳,<br>답은 <span class="hl">${ORIGIN_ADJ[topId]}</span>.`;
+      $('coverHeadline').innerHTML = headline;
+
+      $('coverDeck').textContent = topId
+        ? `${basis} 기준으로 거점마다 가장 싼 소싱처를 고르면 톤당 평균 ${fmt(avgBest)}. 2순위를 택했을 때보다 평균 ${fmt(avgSavings)}를 덜 낸다.`
+          + (runner ? ` ${ORIGIN_ADJ[runner[0]]}이 ${runner[1]}곳으로 뒤를 잇는다.` : '')
+        : '';
+
+      $('kpiAvgBestPrice').innerHTML = validDestCount ? `<span class="cur">$</span>${Math.round(avgBest).toLocaleString('en-US')}` : '—';
+      $('kpiAvgBestCaption').textContent = `${validDestCount}개 거점 평균 최적 ${basis} · USD/MT`;
+
+      // ---- figures ---------------------------------------------------------
+      $('figSavings').innerHTML = `−\u2009${fmt(avgSavings)}<small>/MT</small>`;
+      $('figSavingsSub').textContent = '거점별 1순위를 택했을 때 2순위 대비 평균';
+
+      const krRanked = destRankings['KR'] || [];
+      const krBest = krRanked[0];
+      if (krBest) {
+        const krSecond = krRanked[1];
+        $('figKorea').innerHTML = `${fmt(krBest.displayPrice)}<small>${originOf(krBest.origId).name}</small>`;
+        const cnKr = cells['CN']['KR'];
+        let sub = krSecond ? `2위 ${originOf(krSecond.origId).name} 대비 <b>−${fmt(krSecond.displayPrice - krBest.displayPrice)}</b>` : '단독 소싱';
+        if (mat.category === 'Steel' && cnKr.isAvailable && krBest.origId !== 'CN') {
+          sub += ` · 중국산은 AD ${state.krChinaSteelAdPct}% 반영 시 ${fmt(cnKr.displayPrice)}`;
+        }
+        $('figKoreaSub').innerHTML = sub;
+      } else {
+        $('figKorea').textContent = '—';
+        $('figKoreaSub').textContent = '비교 가능한 생산지 없음';
+      }
+
+      if (widest) {
+        $('figGap').innerHTML = `−\u2009${fmt(widest.gap)}<small>${widest.d.shortName}</small>`;
+        $('figGapSub').innerHTML = `${originOf(widest.best.origId).name} vs ${originOf(widest.second.origId).name} — 2순위를 사면 톤당 이만큼 더 낸다`;
+      } else {
+        $('figGap').textContent = '—';
+        $('figGapSub').textContent = '비교 대상이 하나뿐입니다';
+      }
+
+      let riskCount = 0, activeOriginCount = 0;
+      ORIGINS.forEach(o => {
+        if (state.originAvailable[mat.id][o.id] === false) return;
+        activeOriginCount++;
+        DESTINATIONS.forEach(d => { if (cells[o.id][d.id].adCvdPct > 0) riskCount++; });
+      });
+      $('figRisk').innerHTML = `${riskCount}<small>/ ${activeOriginCount * DESTINATIONS.length} 구간</small>`;
+      $('figRiskSub').textContent = `반덤핑·232조·301조 등이 걸린 항로 · 활성 생산국 ${activeOriginCount}개`;
+
+      // ---- line-up ---------------------------------------------------------
+      const lineup = $('quickDestCardsGrid');
+      lineup.innerHTML = DESTINATIONS.map((d, i) => {
+        const ranked = destRankings[d.id];
+        const best = ranked[0];
+        const second = ranked[1];
+        const idx = String(i + 1).padStart(2, '0');
+        if (!best) {
+          return `<li class="lu-item" data-lineup-dest="${d.id}">
+            <span class="lu-idx">${idx}</span>
+            <span class="lu-dest"><strong>${d.shortName}</strong><span>${portCode(d)}</span></span>
+            <span class="lu-win">—</span><span class="lu-price">—</span>
+            <span class="lu-gap">비교 가능한 생산지 없음</span></li>`;
+        }
+        const o = originOf(best.origId);
+        return `<li class="lu-item" data-lineup-dest="${d.id}" tabindex="0">
+          <span class="lu-idx">${idx}</span>
+          <span class="lu-dest"><strong>${d.shortName}</strong><span>${portCode(d)}</span></span>
+          <span class="lu-win"><b>${o.id}</b>${o.name}</span>
+          <span class="lu-price num">${fmt(best.displayPrice)}</span>
+          <span class="lu-gap">${second ? `2위 ${originOf(second.origId).name} +${fmt(second.displayPrice - best.displayPrice)}` : '단독 소싱'}</span>
+        </li>`;
+      }).join('');
+      lineup.querySelectorAll('[data-lineup-dest]').forEach(li => {
+        const dId = li.getAttribute('data-lineup-dest');
+        bindPopup(li, (e) => showDestinationRankingPopup(e, mat.id, dId));
+        li.addEventListener('click', () => selectDest(dId));
+        li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectDest(dId); } });
+      });
+
+      // ---- matrix ----------------------------------------------------------
+      $('matrixHeaderRow').innerHTML = `<th class="corner"><span class="eyebrow">Origin ↓ &nbsp; Port →</span></th>`
+        + DESTINATIONS.map(d => `<th data-dest-col="${d.id}"><span class="d-name">${d.shortName}</span><span class="d-code">${portCode(d)}</span></th>`).join('');
+      $('matrixHeaderRow').querySelectorAll('[data-dest-col]').forEach(th => {
+        const dId = th.getAttribute('data-dest-col');
+        bindPopup(th, (e) => showDestinationRankingPopup(e, mat.id, dId));
+      });
+
+      $('matrixTableBody').innerHTML = ORIGINS.map(o => {
+        const isAvail = state.originAvailable[mat.id][o.id] !== false;
+        const head = `<th scope="row" class="row-head ${isAvail ? '' : 'is-off'}">
+            <span class="code">${o.id}</span><span class="name">${o.name}</span>
+            <span class="fob">${isAvail ? `FOB ${fmt(state.fobPrices[mat.id][o.id])}` : '생산 없음'}</span>
+          </th>`;
+        const tds = DESTINATIONS.map(d => {
+          const c = cells[o.id][d.id];
+          let cls = 'cell num', text;
+          if (!c.isAvailable || (!state.includeDomestic && c.isDomestic)) {
+            cls += ' off'; text = '—';
+          } else {
+            text = Math.round(c.displayPrice).toLocaleString('en-US');
+            if (c.rank === 1) cls += ' r1';
+            else if (c.rank === 2) cls += ' r2';
+            else if (c.extraDutyPct >= 15) cls += ' risk';
+          }
+          return `<td class="${cls}" data-orig="${o.id}" data-dest="${d.id}"><span>${text}</span></td>`;
+        }).join('');
+        return `<tr>${head}${tds}</tr>`;
+      }).join('');
+
+      $('matrixTableBody').querySelectorAll('.cell').forEach(td => {
+        const oId = td.getAttribute('data-orig');
+        const dId = td.getAttribute('data-dest');
+        bindPopup(td, (e) => showCellHoverPopup(e, mat.id, oId, dId));
+        td.addEventListener('click', () => {
+          state.selectedDetailOrigin = oId;
+          selectDest(dId);
+        });
+      });
+
+      applySelectedDest();
+    }
+
+    function renderChart() {
+      const mat = getActiveMaterial();
+      const { cells, destRankings } = computeMaterialMatrix(mat.id);
+      const d = destOf(state.selectedDetailDest) || DESTINATIONS[0];
+
+      const rows = ORIGINS.map(o => cells[o.id][d.id])
+        .sort((a, b) => {
+          if (a.isAvailable !== b.isAvailable) return a.isAvailable ? -1 : 1;
+          return (a.displayPrice || 0) - (b.displayPrice || 0);
+        });
+      const inland = (c) => (state.priceBasis === 'door' ? c.inlandMt : 0);
+      const labels = rows.map(c => {
+        const o = originOf(c.origId);
+        return c.isAvailable ? `${o.id}  ${o.name}` : `${o.id}  ${o.name} (없음)`;
+      });
+      const fobData = rows.map(c => (c.isAvailable ? +c.fob.toFixed(1) : 0));
+      const frtData = rows.map(c => (c.isAvailable ? +(c.freightMt + c.insuranceMt + inland(c)).toFixed(1) : 0));
+      const dutyData = rows.map(c => (c.isAvailable ? +c.tariffAmount.toFixed(1) : 0));
+
+      const font = { family: "'Pretendard', -apple-system, sans-serif", size: 12 };
+      if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+      // Chart.js comes from a CDN; if a network blocks it, keep the rest of the page alive.
+      if (typeof Chart === 'undefined') {
+        $('destComparisonChart').closest('.chart-box').innerHTML =
+          '<p class="fine" style="margin:0">차트 라이브러리(Chart.js)를 불러오지 못해 막대 차트를 생략했습니다. 오른쪽 원가 구성과 매트릭스 수치는 정상입니다.</p><canvas id="destComparisonChart" class="hidden"></canvas>';
+      } else comparisonChart = new Chart($('destComparisonChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'FOB', data: fobData, backgroundColor: COLORS.ink },
+            { label: state.priceBasis === 'door' ? '운임·보험·내륙' : '운임·보험', data: frtData, backgroundColor: COLORS.taupe },
+            { label: '관세·무역구제', data: dutyData, backgroundColor: COLORS.accent }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 260 },
+          datasets: { bar: { barThickness: 22, borderSkipped: false } },
+          plugins: {
+            legend: { position: 'top', align: 'start', labels: { font, color: COLORS.ink, boxWidth: 10, boxHeight: 10, padding: 18 } },
+            tooltip: {
+              backgroundColor: COLORS.ink, titleFont: { ...font, weight: '700' }, bodyFont: font, padding: 10, cornerRadius: 0,
+              callbacks: { label: (ctx) => ` ${ctx.dataset.label}  ${fmt(ctx.parsed.x, 1)}` }
+            }
+          },
+          scales: {
+            x: { stacked: true, beginAtZero: true, border: { display: false }, grid: { color: 'rgba(20,19,18,0.07)' },
+                 ticks: { font: { ...font, size: 11 }, color: COLORS.mute, callback: (v) => '$' + Number(v).toLocaleString('en-US') } },
+            y: { stacked: true, border: { color: COLORS.ink }, grid: { display: false },
+                 ticks: { font: { ...font, weight: '600' }, color: COLORS.ink } }
+          }
+        }
+      });
+
+      // ---- reading -----------------------------------------------------------
+      const ranked = destRankings[d.id];
+      const best = ranked[0];
+      const worst = ranked[ranked.length - 1];
+      const box = $('anatomyReading');
+      if (!best) {
+        box.innerHTML = `<p class="eyebrow">Reading</p><p class="reading-lead">${d.shortName}에는 비교 가능한 생산지가 없습니다.</p>`;
+        return;
+      }
+      const o = originOf(best.origId);
+      const frt = best.freightMt + best.insuranceMt + inland(best);
+      const sum = Math.max(1, best.fob + frt + best.tariffAmount);
+      const pct = (v) => Math.round((v / sum) * 100);
+      box.innerHTML = `
+        <p class="eyebrow">Reading — ${d.name}</p>
+        <p class="reading-lead">${d.shortName}의 1순위는 <span class="hl">${ORIGIN_ADJ[o.id]}</span>, 톤당 ${fmt(best.displayPrice)}.</p>
+        <dl class="ledger">
+          <div><dt><i class="swatch" style="background:${COLORS.ink}"></i>FOB</dt><dd>${fmt(best.fob)} · ${pct(best.fob)}%</dd></div>
+          <div><dt><i class="swatch" style="background:${COLORS.taupe}"></i>${state.priceBasis === 'door' ? '운임·보험·내륙' : '운임·보험'}</dt><dd>${fmt(frt)} · ${pct(frt)}%</dd></div>
+          <div><dt><i class="swatch" style="background:${COLORS.accent}"></i>관세 ${best.totalDutyPct.toFixed(1)}%</dt><dd>${fmt(best.tariffAmount)} · ${pct(best.tariffAmount)}%</dd></div>
+        </dl>
+        <p class="reading-foot">${ranked.length > 1
+          ? `가장 비싼 선택지는 ${ORIGIN_ADJ[worst.origId]} ${fmt(worst.displayPrice)} — 1순위보다 톤당 ${fmt(worst.displayPrice - best.displayPrice)} 높다.`
+          : '이 거점은 비교 대상이 하나뿐입니다.'} POD ${escapeHtml(d.port)} (${escapeHtml(d.locode)}).</p>`;
+    }
+
+    function renderAllMaterialsSummary() {
+      $('summaryHeaderRow').innerHTML = `<th>거점 · 기준항</th>` + MATERIALS.map(m => `<th class="c">${matLabel(m)}<br><span style="letter-spacing:.06em;text-transform:none;font-weight:500">HS ${m.hsCode}</span></th>`).join('');
+      const all = {};
+      MATERIALS.forEach(m => { all[m.id] = computeMaterialMatrix(m.id); });
+
+      const tbody = $('allMaterialsSummaryBody');
+      tbody.innerHTML = DESTINATIONS.map(d => {
+        const cellsHtml = MATERIALS.map(m => {
+          const ranked = all[m.id].destRankings[d.id];
+          const best = ranked[0];
+          if (!best) return `<td class="ix muted">—</td>`;
+          const second = ranked[1];
+          return `<td class="ix" data-sum-mat="${m.id}" data-sum-orig="${best.origId}" data-sum-dest="${d.id}">
+              <span class="ix-code">${best.origId}</span>
+              <span class="ix-price num">${fmt(best.displayPrice)}</span>
+              <span class="ix-gap">${second ? `2위 대비 −${fmt(second.displayPrice - best.displayPrice)}` : '단독 소싱'}</span>
+            </td>`;
+        }).join('');
+        return `<tr><td class="ix-dest"><strong>${d.name}</strong><span>${escapeHtml(d.port)} · ${escapeHtml(d.locode)}</span></td>${cellsHtml}</tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('[data-sum-mat]').forEach(td => {
+        bindPopup(td, (e) => showCellHoverPopup(e, td.getAttribute('data-sum-mat'), td.getAttribute('data-sum-orig'), td.getAttribute('data-sum-dest')));
+      });
+    }
+
+    function renderPortMappingGuide() {
+      const tons = Number(state.tonsPerContainer[state.selectedMaterialId]) || 24;
+      $('portGuideTableBody').innerHTML = DESTINATIONS.map(d => `
+        <tr>
+          <td class="grp">${d.name}</td>
+          <td class="strong">${escapeHtml(d.city)}</td>
+          <td>${escapeHtml(d.port)} <span class="muted">${escapeHtml(d.locode)}</span></td>
+          <td class="r num">${escapeHtml(d.distanceKm)}</td>
+          <td class="r num">${fmt(d.inlandBoxUsd)}/Box <span class="muted">≈ ${fmt(d.inlandBoxUsd / tons, 1)}/MT</span></td>
+          <td class="note">${escapeHtml(d.portNote)}</td>
+        </tr>`).join('');
+    }
+
+    function renderFreightTab() {
+      const mat = getActiveMaterial();
+      const { cells } = computeMaterialMatrix(mat.id);
+      const srcOn = (s) => state.activeFreightSources.includes(s);
+      document.querySelectorAll('[data-src-col]').forEach(th => th.classList.toggle('is-off', !srcOn(th.getAttribute('data-src-col'))));
+
+      const tbody = $('freightDetailTableBody');
+      tbody.innerHTML = ORIGINS.map(o => DESTINATIONS.map((d, i) => {
+        const c = cells[o.id][d.id];
+        const key = `${mat.id}_${o.id}_${d.id}`;
+        const isCustom = state.customFreightMt[key] !== undefined;
+        return `<tr class="${i === 0 ? 'group-start' : ''}">
+          <td class="grp">${i === 0 ? `<b>${o.id}</b>${o.name}` : ''}</td>
+          <td class="strong" style="white-space:nowrap">${d.name}</td>
+          <td class="muted">${escapeHtml(o.shortPort)} → <span style="color:var(--ink)">${escapeHtml(d.port)}</span> ${escapeHtml(d.locode)}</td>
+          <td class="r num ${srcOn('drewry') ? '' : 'is-off'}">${fmt(c.drewryBox)}</td>
+          <td class="r num ${srcOn('freightos') ? '' : 'is-off'}">${fmt(c.freightosBox)}</td>
+          <td class="r num ${srcOn('cogoport') ? '' : 'is-off'}">${fmt(c.cogoportBox)}</td>
+          <td class="r num strong">${fmt(c.avgBoxFreight)}</td>
+          <td class="r"><input type="number" step="1" min="0" data-key="${key}" value="${c.freightMt.toFixed(1)}" class="inline-input num freight-mt-input" title="${isCustom ? '사용자 지정값' : '지수 평균 ÷ 적재중량'}" style="${isCustom ? 'color:var(--accent)' : ''}" aria-label="${o.name}→${d.shortName} 톤당 해운비" /></td>
+          <td class="r num muted">${c.isDomestic ? '—' : '+' + fmt(c.inlandMt, 1)}</td>
+        </tr>`;
+      }).join('')).join('');
+
+      tbody.querySelectorAll('.freight-mt-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val >= 0) {
+            state.customFreightMt[e.target.getAttribute('data-key')] = val;
+            renderAll();
+            showToast('사용자 지정 톤당 해상물류비를 반영했습니다.');
+          }
+        });
+      });
+    }
+
+    function renderTariffTab() {
+      const mat = getActiveMaterial();
+      const { cells } = computeMaterialMatrix(mat.id);
+      $('tariffDetailTableBody').innerHTML = ORIGINS.map(o => DESTINATIONS.map((d, i) => {
+        const c = cells[o.id][d.id];
+        const raw = state.tariffs[mat.id][o.id][d.id]; // agreement + legal basis as stored, independent of the sales/plant mode
+        return `<tr class="${i === 0 ? 'group-start' : ''}">
+          <td class="grp">${i === 0 ? `<b>${o.id}</b>${o.name}` : ''}</td>
+          <td class="strong" style="white-space:nowrap">${d.name}</td>
+          <td class="r num">${c.mfnPct}</td>
+          <td class="r num">${c.ftaPct}</td>
+          <td class="muted">${escapeHtml(raw.ftaName)}</td>
+          <td class="r num ${c.adCvdPct > 0 ? 'acc' : 'muted'}">${c.adCvdPct > 0 ? '+' + c.adCvdPct : '0'}</td>
+          <td class="r num ${c.totalDutyPct > 15 ? 'acc' : 'strong'}">${c.totalDutyPct.toFixed(2)}</td>
+          <td class="note">${escapeHtml(raw.note)}</td>
+        </tr>`;
+      }).join('')).join('');
+    }
+
+    function populateDestDropdown() {
+      const sel = $('selectChartDest');
+      sel.innerHTML = DESTINATIONS.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+      sel.value = state.selectedDetailDest;
+      sel.addEventListener('change', (e) => selectDest(e.target.value));
     }
 
     function renderAll() {
       renderPortMappingGuide();
       renderMaterialSelector();
+      renderConditionLine();
       renderFobInputs();
       renderMatrixAndKpis();
       renderChart();
@@ -2023,207 +2101,210 @@
       renderTariffTab();
     }
 
+    // Push state values back into every control (used on boot and reset)
+    function syncControlsFromState() {
+      $('selectPriceBasis').value = state.priceBasis;
+      $('selectKrChinaSteelAd').value = String(state.krChinaSteelAdPct);
+      $('chkApplyFta').checked = state.applyFta;
+      $('chkApplyAdCvd').checked = state.applyAdCvd;
+      $('chkIncludeDomestic').checked = state.includeDomestic;
+      $('chkManausZfm').checked = state.applyManausZfm;
+      ['TH', 'ID', 'IN', 'KR', 'EG'].forEach(k => { $('chkBonded' + k).checked = !!state.bondedExemptions[k]; });
+      $('inputInsuranceRate').value = state.insuranceRatePct;
+      $('inputFreightMultiplier').value = state.freightMultiplierPct;
+      document.querySelectorAll('.freight-source-chk').forEach(chk => { chk.checked = state.activeFreightSources.includes(chk.value); });
+      $('freightSourceWarning').classList.toggle('hidden', state.activeFreightSources.length >= 2);
+      updateModeButtonsUI();
+    }
+
+    function updateModeButtonsUI() {
+      const isExp = state.salesType === 'export';
+      const isBond = state.plantZoneType === 'bonded';
+      $('btnSalesExport').classList.toggle('is-on', isExp);
+      $('btnSalesDomestic').classList.toggle('is-on', !isExp);
+      $('btnZoneBonded').classList.toggle('is-on', isBond);
+      $('btnZoneNonBonded').classList.toggle('is-on', !isBond);
+    }
+
     function setupEventListeners() {
-      // Port Modal
-      const portModal = document.getElementById('portGuideModal');
-      document.getElementById('btnOpenPortModal').addEventListener('click', () => portModal.classList.remove('hidden'));
-      document.getElementById('btnClosePortModal').addEventListener('click', () => portModal.classList.add('hidden'));
+      // ---- POD modal ---------------------------------------------------------
+      const portModal = $('portGuideModal');
+      $('btnOpenPortModal').addEventListener('click', () => portModal.classList.remove('hidden'));
+      $('btnClosePortModal').addEventListener('click', () => portModal.classList.add('hidden'));
       portModal.addEventListener('click', (e) => { if (e.target === portModal) portModal.classList.add('hidden'); });
 
-      // Settings Drawer
-      const drawer = document.getElementById('settingsDrawer');
-      const drawerBtn = document.getElementById('btnToggleSettingsDrawer');
-      drawerBtn.addEventListener('click', () => {
-        const isHidden = drawer.classList.toggle('hidden');
-        drawerBtn.textContent = isHidden ? '⚙️ 상세 설정 · FOB 키인(없음 설정) ▼' : '⚙️ 상세 설정 · FOB 키인(없음 설정) ▲';
+      // ---- Settings drawer -----------------------------------------------------
+      const drawer = $('settingsDrawer');
+      const scrim = $('drawerScrim');
+      const drawerBtn = $('btnToggleSettingsDrawer');
+      const setDrawer = (open) => {
+        drawer.classList.toggle('is-open', open);
+        scrim.classList.toggle('is-open', open);
+        drawerBtn.setAttribute('aria-expanded', String(open));
+        if (open) hideHoverPopup();
+      };
+      drawerBtn.addEventListener('click', () => setDrawer(!drawer.classList.contains('is-open')));
+      $('btnCloseDrawer').addEventListener('click', () => setDrawer(false));
+      scrim.addEventListener('click', () => setDrawer(false));
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        setDrawer(false);
+        portModal.classList.add('hidden');
+        hideHoverPopup();
       });
 
-      // Download Dropdown
-      const dlMenu = document.getElementById('downloadDropdownMenu');
-      document.getElementById('btnDownloadMenuToggle').addEventListener('click', (e) => {
+      // ---- Download menu -------------------------------------------------------
+      const dlMenu = $('downloadDropdownMenu');
+      $('btnDownloadMenuToggle').addEventListener('click', (e) => {
         e.stopPropagation();
         dlMenu.classList.toggle('hidden');
       });
       document.addEventListener('click', () => dlMenu.classList.add('hidden'));
 
-      // Tabs
+      // ---- Section tabs --------------------------------------------------------
+      const panels = { matrix: 'tabPanelMatrix', summary: 'tabPanelSummary', freight: 'tabPanelFreight', tariff: 'tabPanelTariff' };
       document.querySelectorAll('.nav-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const targetTab = btn.getAttribute('data-tab');
-          document.querySelectorAll('.nav-tab-btn').forEach(b => {
-            b.className = 'nav-tab-btn px-4 py-2 text-xs sm:text-sm font-medium border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 whitespace-nowrap transition';
-          });
-          btn.className = 'nav-tab-btn px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-[#FD312E] text-white whitespace-nowrap transition';
-
-          document.getElementById('tabPanelMatrix').classList.toggle('hidden', targetTab !== 'matrix');
-          document.getElementById('tabPanelSummary').classList.toggle('hidden', targetTab !== 'summary');
-          document.getElementById('tabPanelFreight').classList.toggle('hidden', targetTab !== 'freight');
-          document.getElementById('tabPanelTariff').classList.toggle('hidden', targetTab !== 'tariff');
+          const target = btn.getAttribute('data-tab');
+          document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.toggle('is-active', b === btn));
+          Object.entries(panels).forEach(([key, id]) => $(id).classList.toggle('hidden', key !== target));
+          hideHoverPopup();
         });
       });
 
-      document.getElementById('selectPriceBasis').addEventListener('change', (e) => {
+      // ---- Core switches -------------------------------------------------------
+      $('selectPriceBasis').addEventListener('change', (e) => {
         state.priceBasis = e.target.value;
         renderAll();
       });
 
-      function updateModeButtonsUI() {
-        const isExp = state.salesType === 'export';
-        const isBond = state.plantZoneType === 'bonded';
-        document.getElementById('btnSalesExport').className = isExp
-          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition'
-          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
-        document.getElementById('btnSalesDomestic').className = !isExp
-          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#A50034] text-white shadow-xs transition'
-          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
-
-        document.getElementById('btnZoneBonded').className = isBond
-          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition'
-          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
-        document.getElementById('btnZoneNonBonded').className = !isBond
-          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold bg-[#111111] text-white shadow-xs transition'
-          : 'px-2.5 py-1 rounded-md text-xs font-semibold text-neutral-700 hover:text-neutral-900 transition';
-      }
-
-      document.getElementById('btnSalesExport').addEventListener('click', () => {
+      $('btnSalesExport').addEventListener('click', () => {
         state.salesType = 'export';
         updateModeButtonsUI();
         renderAll();
-        showToast(`🌐 [수출용 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}] 기준으로 매트릭스가 전환되었습니다.`);
+        showToast(`수출 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'} 기준으로 전환했습니다.`);
       });
-      document.getElementById('btnSalesDomestic').addEventListener('click', () => {
+      $('btnSalesDomestic').addEventListener('click', () => {
         state.salesType = 'domestic';
         updateModeButtonsUI();
         renderAll();
-        showToast(`🏠 [내수용 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'}] 기준으로 매트릭스가 전환되었습니다.`);
+        showToast(`내수 · ${state.plantZoneType === 'bonded' ? '보세' : '비보세'} 기준으로 전환했습니다.`);
       });
-      document.getElementById('btnZoneBonded').addEventListener('click', () => {
+      $('btnZoneBonded').addEventListener('click', () => {
         state.plantZoneType = 'bonded';
         state.applyManausZfm = true;
         state.bondedExemptions = { TH: true, ID: true, IN: true, KR: true, EG: true };
-        document.getElementById('chkManausZfm').checked = true;
-        document.getElementById('chkThailandBondedExemption').checked = true;
-        ['TH', 'ID', 'IN', 'KR', 'EG'].forEach(k => {
-          const el = document.getElementById('chkBonded' + k);
-          if (el) el.checked = true;
-        });
-        updateModeButtonsUI();
+        syncControlsFromState();
         renderAll();
-        showToast(`🏭 [${state.salesType === 'export' ? '수출용' : '내수용'} · 보세(특구/수출면허)] 기준으로 전환되었습니다.`);
+        showToast(`${state.salesType === 'export' ? '수출' : '내수'} · 보세(특구/수출면허) 기준으로 전환했습니다.`);
       });
-      document.getElementById('btnZoneNonBonded').addEventListener('click', () => {
+      $('btnZoneNonBonded').addEventListener('click', () => {
         state.plantZoneType = 'nonbonded';
         state.applyManausZfm = false;
         state.bondedExemptions = { TH: false, ID: false, IN: false, KR: false, EG: false };
-        document.getElementById('chkManausZfm').checked = false;
-        document.getElementById('chkThailandBondedExemption').checked = false;
-        ['TH', 'ID', 'IN', 'KR', 'EG'].forEach(k => {
-          const el = document.getElementById('chkBonded' + k);
-          if (el) el.checked = false;
-        });
-        updateModeButtonsUI();
+        syncControlsFromState();
         renderAll();
-        showToast(`🏢 [${state.salesType === 'export' ? '수출용' : '내수용'} · 비보세(일반 과세)] 기준으로 전환되었습니다.`);
+        showToast(`${state.salesType === 'export' ? '수출' : '내수'} · 비보세(일반 과세) 기준으로 전환했습니다.`);
       });
 
-      document.getElementById('selectKrChinaSteelAd').addEventListener('change', (e) => {
+      // ---- Tariff rules (drawer) ----------------------------------------------
+      $('selectKrChinaSteelAd').addEventListener('change', (e) => {
         const rate = parseFloat(e.target.value) || 0;
         state.krChinaSteelAdPct = rate;
         ['GI', 'PCM'].forEach(mId => {
-          if (state.tariffs[mId] && state.tariffs[mId].CN && state.tariffs[mId].CN.KR) {
-            state.tariffs[mId].CN.KR.adCvd = rate;
-          }
+          if (state.tariffs[mId] && state.tariffs[mId].CN && state.tariffs[mId].CN.KR) state.tariffs[mId].CN.KR.adCvd = rate;
         });
         renderAll();
-        showToast(`한국 수입 중국산 도금·컬러강판 반덤핑 관세율 ${rate}% 반영 완료`);
+        showToast(`한국 수입 중국산 도금·컬러강판 반덤핑 관세 ${rate}%를 반영했습니다.`);
       });
-
-      document.getElementById('chkManausZfm').addEventListener('change', (e) => {
+      $('chkManausZfm').addEventListener('change', (e) => {
         state.applyManausZfm = e.target.checked;
         renderAll();
-        showToast(state.applyManausZfm
-          ? '브라질 마나우스 ZFM 기본관세 88% 감면 적용 (반덤핑 관세는 미면제)'
-          : '브라질 일반 Mercosur 관세 기준으로 전환되었습니다.');
+        showToast(state.applyManausZfm ? '마나우스 ZFM 기본관세 88% 감면 적용 (반덤핑은 미면제)' : '브라질 일반 Mercosur 관세 기준으로 전환했습니다.');
+      });
+      $('chkBondedTH').addEventListener('change', (e) => {
+        state.bondedExemptions.TH = e.target.checked;
+        renderAll();
+        showToast(e.target.checked ? '태국 BOI·가전 제조용 철강 AD 0% 면제를 적용했습니다.' : '태국 일반 수입통관(AD 부과) 기준으로 전환했습니다.');
+      });
+      ['ID', 'IN', 'KR', 'EG'].forEach(k => {
+        $('chkBonded' + k).addEventListener('change', (e) => {
+          state.bondedExemptions[k] = e.target.checked;
+          renderAll();
+        });
+      });
+      $('chkApplyFta').addEventListener('change', (e) => { state.applyFta = e.target.checked; renderAll(); });
+      $('chkApplyAdCvd').addEventListener('change', (e) => { state.applyAdCvd = e.target.checked; renderAll(); });
+      $('chkIncludeDomestic').addEventListener('change', (e) => { state.includeDomestic = e.target.checked; renderAll(); });
+
+      // ---- Freight parameters (were not wired in the original) --------------
+      $('inputContainerTons').addEventListener('change', (e) => {
+        const v = parseFloat(e.target.value);
+        if (isNaN(v) || v < 5 || v > 30) { e.target.value = state.tonsPerContainer[state.selectedMaterialId]; showToast('적재중량은 5~30MT 사이로 입력하세요.'); return; }
+        state.tonsPerContainer[state.selectedMaterialId] = v;
+        renderAll();
+        showToast(`${matLabel(getActiveMaterial())} 컨테이너당 적재중량 ${v}MT를 반영했습니다.`);
+      });
+      $('inputInsuranceRate').addEventListener('change', (e) => {
+        const v = parseFloat(e.target.value);
+        if (isNaN(v) || v < 0 || v > 5) { e.target.value = state.insuranceRatePct; showToast('보험료율은 0~5% 사이로 입력하세요.'); return; }
+        state.insuranceRatePct = v;
+        renderAll();
+      });
+      $('inputFreightMultiplier').addEventListener('change', (e) => {
+        const v = parseFloat(e.target.value);
+        if (isNaN(v) || v < 50 || v > 250) { e.target.value = state.freightMultiplierPct; showToast('시황 조정은 50~250% 사이로 입력하세요.'); return; }
+        state.freightMultiplierPct = v;
+        renderAll();
+      });
+      document.querySelectorAll('.freight-source-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const picked = Array.from(document.querySelectorAll('.freight-source-chk')).filter(c => c.checked).map(c => c.value);
+          if (picked.length === 0) { chk.checked = true; showToast('최소 1개 지수는 선택되어 있어야 합니다.'); return; }
+          state.activeFreightSources = picked;
+          $('freightSourceWarning').classList.toggle('hidden', picked.length >= 2);
+          renderAll();
+        });
       });
 
-      const syncThailandBonded = (checked) => {
-        state.bondedExemptions.TH = checked;
-        document.getElementById('chkThailandBondedExemption').checked = checked;
-        document.getElementById('chkBondedTH').checked = checked;
-        renderAll();
-        showToast(checked
-          ? '태국 법인 보세(BOI Sec.36)·가전 제조용 철강 반덤핑(AD) 0% 면제가 적용되었습니다.'
-          : '태국 일반 내수 수입통관(중국·한국산 철강 AD 부과) 기준으로 전환되었습니다.');
-      };
-      document.getElementById('chkThailandBondedExemption').addEventListener('change', (e) => syncThailandBonded(e.target.checked));
-      document.getElementById('chkBondedTH').addEventListener('change', (e) => syncThailandBonded(e.target.checked));
-
-      ['ID', 'IN', 'KR', 'EG'].forEach(codeKey => {
-        const el = document.getElementById('chkBonded' + codeKey);
-        if (el) {
-          el.addEventListener('change', (e) => {
-            state.bondedExemptions[codeKey] = e.target.checked;
-            renderAll();
-            showToast(`${codeKey} 거점 보세구역·수출용 원재료 AD/관세 면제 설정이 ${e.target.checked ? '적용' : '해제'}되었습니다.`);
-          });
-        }
-      });
-      document.getElementById('chkApplyFta').addEventListener('change', (e) => {
-        state.applyFta = e.target.checked;
-        renderAll();
-      });
-      document.getElementById('chkApplyAdCvd').addEventListener('change', (e) => {
-        state.applyAdCvd = e.target.checked;
-        renderAll();
-      });
-      document.getElementById('chkIncludeDomestic').addEventListener('change', (e) => {
-        state.includeDomestic = e.target.checked;
-        renderAll();
-      });
-
-      // Presets
-      document.getElementById('presetBase').addEventListener('click', () => {
+      // ---- Presets -------------------------------------------------------------
+      $('presetBase').addEventListener('click', () => {
         const mat = getActiveMaterial();
         state.fobPrices[mat.id] = { ...mat.defaultFob };
         state.originAvailable[mat.id] = { KR: true, CN: true, TH: true, IN: true, US: true };
         renderAll();
-        showToast('2026 Q4 시장 기준 FOB 단가가 적용되었습니다.');
+        showToast('2026 Q4 시장 기준 FOB 단가를 적용했습니다.');
       });
-      document.getElementById('presetChinaDrop').addEventListener('click', () => {
+      $('presetChinaDrop').addEventListener('click', () => {
         const mat = getActiveMaterial();
         state.fobPrices[mat.id] = { ...mat.defaultFob, CN: Math.round(mat.defaultFob.CN * 0.90) };
         renderAll();
-        showToast('중국 FOB -10% 시나리오가 적용되었습니다.');
+        showToast('중국 FOB −10% 시나리오를 적용했습니다.');
       });
-      document.getElementById('presetEqualFob').addEventListener('click', () => {
+      $('presetEqualFob').addEventListener('click', () => {
         const mat = getActiveMaterial();
         const base = mat.defaultFob.KR;
         state.fobPrices[mat.id] = { KR: base, CN: base, TH: base, IN: base, US: base };
         renderAll();
-        showToast('동일 FOB 시나리오가 적용되었습니다.');
+        showToast('동일 FOB 시나리오를 적용했습니다.');
       });
-      document.getElementById('btnResetDefaults').addEventListener('click', () => {
+      $('btnResetDefaults').addEventListener('click', () => {
         initAppState();
-        document.getElementById('selectPriceBasis').value = 'landed';
-        updateModeButtonsUI();
-        document.getElementById('selectKrChinaSteelAd').value = '25.75';
-        document.getElementById('chkManausZfm').checked = false;
-        document.getElementById('chkThailandBondedExemption').checked = false;
-        document.getElementById('chkBondedTH').checked = false;
-        ['ID', 'IN', 'KR', 'EG'].forEach(k => {
-          const el = document.getElementById('chkBonded' + k);
-          if (el) el.checked = false;
-        });
+        state.priceBasis = 'landed';
+        state.applyFta = true;
+        state.applyAdCvd = true;
+        state.includeDomestic = true;
+        syncControlsFromState();
         renderAll();
-        showToast('모든 품목의 FOB 단가 및 생산지 유무 설정이 초기화되었습니다.');
+        showToast('모든 품목의 FOB 단가·생산지·운임·관세 설정을 초기화했습니다.');
       });
 
-      // Exports (reflecting "-" for unavailable origins!)
-      document.getElementById('btnExportFreightRawCsv').addEventListener('click', exportOceanFreightRawDataCsv);
-      document.getElementById('btnExportFreightTabCsv').addEventListener('click', exportOceanFreightRawDataCsv);
-      document.getElementById('btnExportTariffRawCsv').addEventListener('click', exportTariffRawDataCsv);
-      document.getElementById('btnExportTariffTabCsv').addEventListener('click', exportTariffRawDataCsv);
-      document.getElementById('btnExportCsv').addEventListener('click', () => {
+      // ---- Exports -------------------------------------------------------------
+      $('btnExportFreightRawCsv').addEventListener('click', exportOceanFreightRawDataCsv);
+      $('btnExportFreightTabCsv').addEventListener('click', exportOceanFreightRawDataCsv);
+      $('btnExportTariffRawCsv').addEventListener('click', exportTariffRawDataCsv);
+      $('btnExportTariffTabCsv').addEventListener('click', exportTariffRawDataCsv);
+      $('btnExportCsv').addEventListener('click', () => {
         const mat = getActiveMaterial();
         const { cells } = computeMaterialMatrix(mat.id);
         const rows = [['품목', 'HS_Code', '출발지', '도착거점', '기준도착항(POD)', 'FOB($/MT)', '해운비($/MT)', '보험료($/MT)', 'CIF($/MT)', '실효관세율(%)', '관세액($/MT)', '통관도착가_Landed($/MT)', '공장입고가_Door($/MT)', '순위']];
@@ -2246,14 +2327,15 @@
       try {
         populateDestDropdown();
         setupEventListeners();
+        syncControlsFromState();
         renderAll();
       } catch (err) {
-        console.error("Dashboard boot error:", err);
+        console.error('Dashboard boot error:', err);
       }
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", bootDashboard);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootDashboard);
     } else {
       bootDashboard();
     }
