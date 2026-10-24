@@ -1,0 +1,125 @@
+{
+  ".claude/settings.json": {
+    "mtime": 1792830679.3684735,
+    "seen": 1792830693.9471185,
+    "ast_hash": "d40d8de86fa4393dabc7c3681ba88da5",
+    "semantic_hash": ""
+  },
+  "app/__init__.py": {
+    "mtime": 1792830515.6964638,
+    "seen": 1792830635.0841758,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "app/data/cargo_profiles.json": {
+    "mtime": 1792830515.703672,
+    "seen": 1792830635.0842693,
+    "ast_hash": "389bf2ece336e2d1afc0223ae7e25c01",
+    "semantic_hash": "389bf2ece336e2d1afc0223ae7e25c01",
+    "ast_empty": true
+  },
+  "app/data/countries.json": {
+    "mtime": 1792830515.7037213,
+    "seen": 1792830635.0842721,
+    "ast_hash": "195283ab8999782b57dc3465e16db232",
+    "semantic_hash": "195283ab8999782b57dc3465e16db232",
+    "ast_empty": true
+  },
+  "app/main.py": {
+    "mtime": 1792830515.7037213,
+    "seen": 1792830635.0842745,
+    "ast_hash": "fc35b00b53297320f43fd6a51334b172",
+    "semantic_hash": "fc35b00b53297320f43fd6a51334b172"
+  },
+  "app/scheduler.py": {
+    "mtime": 1792830515.7037213,
+    "seen": 1792830635.0843213,
+    "ast_hash": "0f2e6e8f48abd902946c95ab3f950574",
+    "semantic_hash": "0f2e6e8f48abd902946c95ab3f950574"
+  },
+  "app/storage.py": {
+    "mtime": 1792830515.7037213,
+    "seen": 1792830635.0843508,
+    "ast_hash": "bfc7b38ffd758b04fc33faee5081de3f",
+    "semantic_hash": "bfc7b38ffd758b04fc33faee5081de3f"
+  },
+  "frontend/app.js": {
+    "mtime": 1792830515.7037213,
+    "seen": 1792830635.084379,
+    "ast_hash": "f6db9a35c4803a49ad660804e18674ee",
+    "semantic_hash": "f6db9a35c4803a49ad660804e18674ee"
+  },
+  "scraper/__init__.py": {
+    "mtime": 1792830515.7044601,
+    "seen": 1792830635.084406,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "scraper/cogoport_scraper.py": {
+    "mtime": 1792830515.7054715,
+    "seen": 1792830635.0844321,
+    "ast_hash": "f55a7544eea90dab192a5e700ae16c54",
+    "semantic_hash": "f55a7544eea90dab192a5e700ae16c54"
+  },
+  "scraper/selectors.json": {
+    "mtime": 1792830515.7054715,
+    "seen": 1792830635.0844595,
+    "ast_hash": "508957b5a3910428a032ca95dd3f0f62",
+    "semantic_hash": "508957b5a3910428a032ca95dd3f0f62",
+    "ast_empty": true
+  },
+  ".claude/hooks/graphify-setup.sh": {
+    "mtime": 1792830679.4078174,
+    "seen": 1792830693.94711,
+    "ast_hash": "ab3bc1aa605904debac4ec042f11e265",
+    "semantic_hash": ""
+  },
+  "scripts/setup-graphify.ps1": {
+    "mtime": 1792830679.4524734,
+    "seen": 1792830693.9471476,
+    "ast_hash": "511466ea0eaa1b18f109ba12ef2fdab5",
+    "semantic_hash": ""
+  },
+  "scripts/setup-graphify.sh": {
+    "mtime": 1792830679.4284735,
+    "seen": 1792830693.9471493,
+    "ast_hash": "c503c59001e097d08cc0fddd48148c2f",
+    "semantic_hash": ""
+  },
+  ".claude/CLAUDE.md": {
+    "mtime": 1792830621.673805,
+    "seen": 1792830693.9471507,
+    "ast_hash": "9b31786b637be3c13978bec4c2330752",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1792830621.6740875,
+    "seen": 1792830693.947152,
+    "ast_hash": "67d88e9d0760c3ba54c75dfd9551c1c5",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792830515.6964638,
+    "seen": 1792830693.947153,
+    "ast_hash": "0d13d986846df3cefaa959b63ba52645",
+    "semantic_hash": ""
+  },
+  "frontend/index.html": {
+    "mtime": 1792830515.7044601,
+    "seen": 1792830693.9471545,
+    "ast_hash": "28a29ef084d0243a67e3d55a470751c5",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1792830515.7044601,
+    "seen": 1792830693.9471557,
+    "ast_hash": "14ad12efb4b32044a86836e6ed7bbdb4",
+    "semantic_hash": ""
+  },
+  "GRAPHIFY.md": {
+    "mtime": 1792830712.4764755,
+    "seen": 1792830727.4917264,
+    "ast_hash": "4cf84951485f25fa03a18e7aef621d00",
+    "semantic_hash": ""
+  }
+}

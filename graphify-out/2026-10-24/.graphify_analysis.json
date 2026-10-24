@@ -1,0 +1,299 @@
+{
+  "communities": {
+    "0": [
+      "app_main",
+      "app_main_bulkrateupdate",
+      "app_main_country_codes",
+      "app_main_get_config",
+      "app_main_get_job",
+      "app_main_load_json",
+      "app_main_manualrateupdate",
+      "app_main_now_iso",
+      "app_main_post_rates_bulk",
+      "app_main_put_rate",
+      "app_main_rationale_1",
+      "app_main_rationale_112",
+      "app_main_refresh_all",
+      "app_main_refresh_one",
+      "app_main_refreshonerequest",
+      "app_main_run_batch_refresh",
+      "app_main_shutdown",
+      "app_main_startup",
+      "app_scheduler_stop_scheduler",
+      "backgroundtasks",
+      "basemodel",
+      "fastapi",
+      "fastapi_staticfiles",
+      "get",
+      "on_event",
+      "path",
+      "post",
+      "put",
+      "pydantic",
+      "sys",
+      "uuid"
+    ],
+    "1": [
+      "argparse",
+      "dataclasses",
+      "json",
+      "locator",
+      "page",
+      "playwright_sync_api",
+      "re",
+      "scraper_cogoport_scraper",
+      "scraper_cogoport_scraper_build_all_routes",
+      "scraper_cogoport_scraper_cogoportscraper",
+      "scraper_cogoport_scraper_cogoportscraper_enter",
+      "scraper_cogoport_scraper_cogoportscraper_exit",
+      "scraper_cogoport_scraper_cogoportscraper_fill_and_select",
+      "scraper_cogoport_scraper_cogoportscraper_init",
+      "scraper_cogoport_scraper_cogoportscraper_search_rate",
+      "scraper_cogoport_scraper_discover",
+      "scraper_cogoport_scraper_first_matching",
+      "scraper_cogoport_scraper_load_countries",
+      "scraper_cogoport_scraper_load_selectors",
+      "scraper_cogoport_scraper_main",
+      "scraper_cogoport_scraper_rationale_1",
+      "scraper_cogoport_scraper_rationale_139",
+      "scraper_cogoport_scraper_rationale_179",
+      "scraper_cogoport_scraper_rationale_189",
+      "scraper_cogoport_scraper_rationale_54",
+      "scraper_cogoport_scraper_rationale_69",
+      "scraper_cogoport_scraper_scrape_all",
+      "scraper_cogoport_scraper_scrape_all_and_store",
+      "scraper_cogoport_scraper_scraperesult",
+      "scraper_cogoport_scraper_search_query_for",
+      "time"
+    ],
+    "2": [
+      "app_init",
+      "app_main_get_scheduler_status",
+      "app_scheduler",
+      "app_scheduler_get_next_run_time",
+      "app_scheduler_merge_status",
+      "app_scheduler_now_iso",
+      "app_scheduler_rationale_1",
+      "app_scheduler_run_daily_refresh",
+      "app_scheduler_start_scheduler",
+      "app_storage_get_scheduler_status",
+      "app_storage_set_scheduler_status",
+      "apscheduler_schedulers_background",
+      "apscheduler_triggers_cron",
+      "backgroundscheduler",
+      "datetime",
+      "os"
+    ],
+    "3": [
+      "app_main_get_rates",
+      "app_storage",
+      "app_storage_get_all",
+      "app_storage_get_rate",
+      "app_storage_now",
+      "app_storage_rationale_1",
+      "app_storage_rationale_107",
+      "app_storage_read_raw",
+      "app_storage_seed_if_empty",
+      "app_storage_set_many",
+      "app_storage_set_rate",
+      "app_storage_write_raw",
+      "pathlib",
+      "source",
+      "threading",
+      "typing"
+    ],
+    "4": [
+      "frontend_app",
+      "frontend_app_allroutekeys",
+      "frontend_app_calcroute",
+      "frontend_app_cargobyid",
+      "frontend_app_countrybycode",
+      "frontend_app_getoceanbase",
+      "frontend_app_routekey",
+      "frontend_app_seq_ramp",
+      "frontend_app_setuptheme",
+      "frontend_app_state",
+      "frontend_app_updatethemelabel",
+      "frontend_app_view_titles"
+    ],
+    "5": [
+      "frontend_app_buildlegend",
+      "frontend_app_fetchjson",
+      "frontend_app_init",
+      "frontend_app_populateselects",
+      "frontend_app_refreshallroutes",
+      "frontend_app_renderschedulebanner",
+      "frontend_app_setupnav",
+      "frontend_app_switchview"
+    ],
+    "6": [
+      "frontend_app_buildmatrix",
+      "frontend_app_buildmatrix_colorfor",
+      "frontend_app_calculatecost",
+      "frontend_app_formatusd",
+      "frontend_app_updatefreightinput"
+    ],
+    "7": [
+      "frontend_app_bulksync",
+      "frontend_app_refreshoneroute",
+      "frontend_app_renderratestable",
+      "frontend_app_searchqueryfor",
+      "frontend_app_showtoast"
+    ],
+    "8": [
+      "frontend_app_freshnessinfo",
+      "frontend_app_freshnesslabel"
+    ],
+    "9": [
+      "scraper_init"
+    ]
+  },
+  "cohesion": {
+    "0": 0.0989247311827957,
+    "1": 0.11612903225806452,
+    "2": 0.175,
+    "3": 0.225,
+    "4": 0.25757575757575757,
+    "5": 0.35714285714285715,
+    "6": 0.6,
+    "7": 0.6,
+    "8": 1.0,
+    "9": 1.0
+  },
+  "gods": [
+    {
+      "id": "frontend_app_init",
+      "label": "init()",
+      "degree": 14
+    },
+    {
+      "id": "frontend_app_renderratestable",
+      "label": "renderRatesTable()",
+      "degree": 13
+    },
+    {
+      "id": "scraper_cogoport_scraper_cogoportscraper",
+      "label": "CogoportScraper",
+      "degree": 11
+    },
+    {
+      "id": "frontend_app_buildmatrix",
+      "label": "buildMatrix()",
+      "degree": 11
+    },
+    {
+      "id": "scraper_cogoport_scraper_scrape_all_and_store",
+      "label": "scrape_all_and_store()",
+      "degree": 9
+    },
+    {
+      "id": "frontend_app_refreshoneroute",
+      "label": "refreshOneRoute()",
+      "degree": 9
+    },
+    {
+      "id": "scraper_cogoport_scraper_main",
+      "label": "main()",
+      "degree": 8
+    },
+    {
+      "id": "scraper_cogoport_scraper_scrape_all",
+      "label": "scrape_all()",
+      "degree": 7
+    },
+    {
+      "id": "app_storage_read_raw",
+      "label": "_read_raw()",
+      "degree": 7
+    },
+    {
+      "id": "app_storage_set_many",
+      "label": "set_many()",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "refresh_one()",
+      "target": "CogoportScraper",
+      "source_files": [
+        "app/main.py",
+        "scraper/cogoport_scraper.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "_run_batch_refresh()",
+      "target": "scrape_all_and_store()",
+      "source_files": [
+        "app/main.py",
+        "scraper/cogoport_scraper.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "run_daily_refresh()",
+      "target": "scrape_all_and_store()",
+      "source_files": [
+        "app/scheduler.py",
+        "scraper/cogoport_scraper.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "scrape_all_and_store()",
+      "target": "set_many()",
+      "source_files": [
+        "scraper/cogoport_scraper.py",
+        "app/storage.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "post_rates_bulk()",
+      "target": "set_many()",
+      "source_files": [
+        "app/main.py",
+        "app/storage.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `CogoportScraper` connect `cogoport_scraper.py` to `main.py`?",
+      "why": "High betweenness centrality (0.079) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 4 inferred relationships involving `init()` (e.g. with `bulkSync()` and `calculateCost()`) actually correct?",
+      "why": "`init()` has 4 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `main.py` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.0989247311827957 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `scrape_all_and_store()` connect `cogoport_scraper.py` to `main.py`, `scheduler.py`, `storage.py`?",
+      "why": "High betweenness centrality (0.050) - this node is a cross-community bridge."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `cogoport_scraper.py` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.11612903225806452 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

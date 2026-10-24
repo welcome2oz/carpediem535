@@ -6,3 +6,6 @@ app/data/freight_rates.json.tmp
 app/data/scheduler_status.json
 app/data/scheduler_status.json.tmp
 .env
+
+# graphify: regenerable AST cache (graph.json/GRAPH_REPORT.md are committed)
+graphify-out/cache/
